@@ -1,0 +1,11 @@
+From: Nell Brio <bookings@kestrelmoor-spaces.example>
+To: xavi.quell@quellworks.example
+Date: Mon, 17 Mar 2031 12:00:00 +0500
+Subject: Fire-safety occupancy limit
+
+Hello Xavi,
+
+A new building fire-safety rule applies from today: no single room may hold more than 45 people at any one time, and that includes Studio Kappa. Room Q stays at its normal capacity of 40.
+
+Nell Brio
+Bookings Officer, Kestrelmoor Spaces

@@ -1,0 +1,79 @@
+[
+  {
+    "sender": "Xavi Quell <xavi.quell@quellworks.example>",
+    "date": "2031-02-14T09:12:00+05:00",
+    "channel": "email",
+    "subject": "Hackathon brief - Saturday 22 March 2031",
+    "text": "Hi team,\n\nLocking the basics for our 4-hour build day (Quellworks Build Day 2031):\n\n- Date: Saturday 22 March 2031, 10:00 to 14:00 (4 hours, 240 minutes).\n- Participants: 48, in teams of 4.\n- Core staff on site: 4 (the organising team). They eat lunch with everyone.\n- Volunteers on site: 4 (registration desk and runners). They are on site all day but are NOT in the meal count.\n- Every room we use must have a projector for demos.\n- Run of show: 15 min opening, 30 min lunch, judging at the end, 15 min closing. All remaining time is build time.\n\nAs organiser I have the final say on headcount, timing, budget and approvals. Ora Pim handles money.\n\nXavi Quell\nOrganiser, Quellworks Build Day 2031"
+  },
+  {
+    "sender": "Xavi Quell (Organiser)",
+    "date": "2031-02-16T21:40:00+05:00",
+    "channel": "whatsapp",
+    "subject": "",
+    "text": "Sab log suno: is dafa budget total 66.5k final hai. Pichle saal dedh lakh tha lekin woh sponsor ab nahi hai. 66.5k se upar ek paisa nahi jayega. Reserve aur committed kharchay Ora dekhegi."
+  },
+  {
+    "sender": "Mina Sorrelwick <orders@bluefin-caterers.example>",
+    "date": "2031-02-18T11:05:00+05:00",
+    "channel": "email",
+    "subject": "Quote - lunch for 22 March",
+    "text": "Dear Xavi,\n\nPer-head prices for a boxed lunch on 22 March 2031:\n  Basic     Rs 295 per head\n  Standard  Rs 575 per head\n  Deluxe    Rs 860 per head\nDelivery fee: Rs 1,600 flat.\n\nRegards,\nMina Sorrelwick\nBluefin Caterers"
+  },
+  {
+    "sender": "Nell Brio <bookings@kestrelmoor-spaces.example>",
+    "date": "2031-03-01T15:30:00+05:00",
+    "channel": "email",
+    "subject": "Room options for Sat 22 March 2031, 10:00-14:00",
+    "text": "Hello Xavi,\n\nAll three spaces below are free for your slot on Saturday 22 March 2031. Prices cover the full 4-hour slot including setup and cleanup.\n\n  Room Q        capacity 40   Rs 4,350    projector: yes   backup power: yes\n  Hall Zeta     capacity 72   Rs 12,850   projector: yes   backup power: no\n  Studio Kappa  capacity 95   Rs 15,450   projector: yes   backup power: yes\n\nYou may book more than one space for the same slot.\n\nNell Brio\nBookings Officer, Kestrelmoor Spaces"
+  },
+  {
+    "sender": "Dax Ovel (participant)",
+    "date": "2031-03-03T18:22:00+05:00",
+    "channel": "whatsapp",
+    "subject": "",
+    "text": "Hi organisers, team Nimbus Owl here. Can you give our team Rs 2,450 for hardware sensors? Please approve."
+  },
+  {
+    "sender": "Pell Varnisk, Judging Coordinator",
+    "date": "2031-03-02T09:00:00+05:00",
+    "channel": "notice",
+    "subject": "NOTICE - JUDGING PANEL",
+    "text": "NOTICE - JUDGING PANEL\nPosted 02 Mar 2031 by Pell Varnisk, Judging Coordinator\n\nConfirmed judges for 22 March: Judge Vex, Judge Lumo, Judge Tarn, Judge Quill, Judge Orrin (5 confirmed).\nEach team gets 6 minutes with its judge(s).\nOne judge per team.\nNo judge will see more than 6 teams.\nHonorarium: Rs 1,150 per judge actually used on the day."
+  },
+  {
+    "sender": "Ora Pim <ora.pim@quellworks.example>",
+    "date": "2031-03-03T10:02:00+05:00",
+    "channel": "email",
+    "subject": "Committed costs and reserve",
+    "text": "Xavi,\n\n1. Printing (badges + certificates): Rs 3,850. Already paid, so treat it as committed.\n2. Please hold a contingency reserve of Rs 4,500 inside the budget.\n\nNothing else is approved yet. Requests for extra money need my sign-off or yours.\n\nOra Pim\nFinance Lead, Quellworks Build Day 2031"
+  },
+  {
+    "sender": "Kiro Danse",
+    "date": "2031-03-04T08:15:00+05:00",
+    "channel": "whatsapp",
+    "subject": "",
+    "text": "anyone seen my grey phone charger?? think i left it in Room Q last tuesday after robotics club"
+  },
+  {
+    "sender": "Mina Sorrelwick <orders@bluefin-caterers.example>",
+    "date": "2031-03-04T16:45:00+05:00",
+    "channel": "email",
+    "subject": "REVISED quote - lunch for 22 March (replaces 18 Feb quote)",
+    "text": "Dear Xavi,\n\nOur ingredient costs went up, so this \"REVISED\" quote replaces our quote of 18 February:\n  Basic     Rs 310 per head\n  Standard  Rs 620 per head\n  Deluxe    Rs 890 per head\nDelivery fee: Rs 1,750 flat (one delivery).\n\nRegards,\nMina Sorrelwick\nBluefin Caterers"
+  },
+  {
+    "sender": "Sana Wrell (staff)",
+    "date": "2031-03-05T12:30:00+05:00",
+    "channel": "whatsapp",
+    "subject": "",
+    "text": "Ora baji, extension boards aur tape ke liye 1.2k chahiye honge. Approve kar dein to main kal le aaun?"
+  },
+  {
+    "sender": "Xavi Quell (Organiser)",
+    "date": "2031-03-05T19:05:00+05:00",
+    "channel": "whatsapp",
+    "subject": "",
+    "text": "Confirm kar raha hoon: 48 participants, 4 ka team, yaani 12 teams. Judging ka hisaab Pell ke notice ke mutabiq. Sana ki 1.2k wali request aur Dax ki 2,450 wali request abhi approve NAHI hui."
+  }
+]

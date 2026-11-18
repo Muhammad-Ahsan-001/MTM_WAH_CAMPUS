@@ -1,0 +1,11 @@
+From: Xavi Quell <xavi.quell@quellworks.example>
+To: core-team@quellworks.example
+Date: Tue, 18 Mar 2031 09:05:00 +0500
+Subject: New end time
+
+Team,
+
+The event on Saturday 22 March 2031 now ends at 13:30 instead of 14:00. The start time stays 10:00.
+
+Xavi Quell
+Organiser

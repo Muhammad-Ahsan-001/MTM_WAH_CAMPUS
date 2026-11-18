@@ -1,0 +1,11 @@
+From: Xavi Quell <xavi.quell@quellworks.example>
+To: core-team@quellworks.example
+Date: Thu, 20 Mar 2031 14:30:00 +0500
+Subject: Safety office rules
+
+Team,
+
+Two new rules from the building's safety office: every room we use must have a first-aid kit, and there must be at least one female volunteer on each floor we use. Room Q is on the 2nd floor and Studio Kappa is on the ground floor.
+
+Xavi Quell
+Organiser

@@ -42,7 +42,12 @@ export class CallLedger {
     public batch: number,
     private nextSeq: number,
     public readonly maxCalls: number,
+    /** Epoch ms by which every call must finish (batch time cap). */
+    public readonly deadline: number = Date.now() + 110_000,
   ) {}
+  msLeft(): number {
+    return this.deadline - Date.now();
+  }
   get used(): number {
     return this.calls.length;
   }
@@ -104,6 +109,8 @@ class RetryableError extends Error {}
 
 async function attempt<T>(ledger: CallLedger, req: ModelRequest<T>, retryOf?: number): Promise<{ data: T; record: CallRecord }> {
   if (ledger.remaining() <= 0) throw new CallCapError(`call cap reached (${ledger.maxCalls} per batch)`);
+  const timeout = Math.min(TIMEOUT_MS, ledger.msLeft() - 1000);
+  if (timeout < 3000) throw new CallCapError(`time cap reached (${Math.round(ledger.msLeft() / 1000)} s left in batch)`);
   const apiKey = requireEnv("OPENAI_API_KEY");
   const model = req.model ?? requireEnv("OPENAI_MODEL");
   const effort = defaultEffort(model);
@@ -146,7 +153,7 @@ async function attempt<T>(ledger: CallLedger, req: ModelRequest<T>, retryOf?: nu
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeout),
     });
     text = await res.text();
   } catch (e) {
@@ -203,7 +210,7 @@ export async function callModel<T>(ledger: CallLedger, req: ModelRequest<T>): Pr
   } catch (e) {
     if (!(e instanceof RetryableError)) throw e;
     const first = ledger.calls[ledger.calls.length - 1];
-    if (ledger.remaining() <= 0) throw new CallCapError(`retry skipped: call cap reached after: ${e.message}`);
+    if (ledger.remaining() <= 0 || ledger.msLeft() < 4000) throw new CallCapError(`retry skipped (cap/time) after: ${e.message}`);
     return await attempt(ledger, req, first?.seq);
   }
 }

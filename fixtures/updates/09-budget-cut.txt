@@ -1,0 +1,11 @@
+From: Xavi Quell <xavi.quell@quellworks.example>
+To: core-team@quellworks.example
+Date: Fri, 14 Mar 2031 20:30:00 +0500
+Subject: Budget cut
+
+Team,
+
+One of our two sponsors has pulled out. The budget total is now Rs 59,950 (down from 66.5k). This replaces the earlier figure. Everything else stays the same.
+
+Xavi Quell
+Organiser

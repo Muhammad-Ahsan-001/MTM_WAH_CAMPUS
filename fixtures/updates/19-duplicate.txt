@@ -1,0 +1,14 @@
+From: Ora Pim <ora.pim@quellworks.example>
+To: xavi.quell@quellworks.example
+Date: Mon, 03 Mar 2031 10:02:00 +0500
+Subject: Committed costs and reserve
+
+Xavi,
+
+1. Printing (badges + certificates): Rs 3,850. Already paid, so treat it as committed.
+2. Please hold a contingency reserve of Rs 4,500 inside the budget.
+
+Nothing else is approved yet. Requests for extra money need my sign-off or yours.
+
+Ora Pim
+Finance Lead, Quellworks Build Day 2031

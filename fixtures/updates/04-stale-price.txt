@@ -1,0 +1,11 @@
+From: Nell Brio <bookings@kestrelmoor-spaces.example>
+To: xavi.quell@quellworks.example
+Date: Sun, 09 Feb 2031 10:10:00 +0500
+Subject: Hall Zeta - March rate
+
+Hello Xavi,
+
+For March 2031 bookings, Hall Zeta (capacity 72) is Rs 10,900 for a 4-hour slot.
+
+Nell Brio
+Bookings Officer, Kestrelmoor Spaces

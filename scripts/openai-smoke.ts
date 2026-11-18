@@ -11,7 +11,7 @@ import { CallLedger, callModel } from "../src/core/llm";
 import { READING_SCHEMA, ReadingSchema, SYSTEM_PROMPT, buildReadingUser } from "../src/core/reading";
 
 loadEnv();
-const PACK = "fixtures/sample-pack.txt";
+const PACK = process.env.SMOKE_PACK || "fixtures/sample-pack.txt";
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 

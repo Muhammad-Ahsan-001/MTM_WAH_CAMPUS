@@ -1,0 +1,12 @@
+From: Mina Sorrelwick <orders@bluefin-caterers.example>
+To: xavi.quell@quellworks.example
+Date: Tue, 11 Mar 2031 09:40:00 +0500
+Subject: Quantity limit for 22 March
+
+Dear Xavi,
+
+Two of our cooks are off that weekend. For Saturday 22 March 2031 we can prepare at most 50 meals in total, across all tiers. Prices are unchanged.
+
+Regards,
+Mina Sorrelwick
+Bluefin Caterers
