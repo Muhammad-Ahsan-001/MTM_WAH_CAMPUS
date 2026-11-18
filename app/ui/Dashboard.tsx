@@ -7,6 +7,8 @@ import { fmtClock, toMin } from "../../src/core/jev/solve";
 import { finalMarkdown } from "../../src/core/render";
 import type { CallRecord } from "../../src/core/llm";
 import type { Check, Message, Plan, SessionState } from "../../src/core/types";
+import Explain from "../../components/kit/Explain";
+import { explainFigure, type FigureKey } from "../../src/extras/explain";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -223,7 +225,7 @@ export default function Dashboard() {
           {tab === "overview" && (
             <div className="grid gap-4 lg:grid-cols-3">
               <div className="space-y-4 lg:col-span-2">
-                {state.plan && <AtAGlance plan={state.plan} />}
+                {state.plan && <AtAGlance plan={state.plan} state={state} />}
                 <LatestChange state={state} />
               </div>
               <div className="space-y-4">
@@ -291,18 +293,20 @@ function ChecksGrid({ six }: { six: Check[] }) {
 }
 
 // ---------- overview ----------
-function AtAGlance({ plan }: { plan: Plan }) {
+function AtAGlance({ plan, state }: { plan: Plan; state: SessionState }) {
+  const [fig, setFig] = useState<FigureKey | null>(null);
+  const closeFig = useCallback(() => setFig(null), []);
   const e = plan.event;
   const b = plan.budget;
   const used = b && b.limit ? Math.min(100, (b.total / b.limit) * 100) : 0;
   return (
     <Box title="The plan at a glance" hint="Each line shows which message the figure came from.">
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
-        <Big k="Participants" v={e.participants} refs={e.refs.participants} />
-        <Big k="Teams" v={e.teams} refs={e.refs.teams} />
-        <Big k="People on site" v={e.people_on_site} />
-        <Big k="Meals to order" v={e.people_to_feed} />
-        <Big k="Duration" v={`${e.duration_min} min`} refs={e.refs.duration} />
+        <Big k="Participants" v={e.participants} refs={e.refs.participants} onClick={() => setFig("participants")} />
+        <Big k="Teams" v={e.teams} refs={e.refs.teams} onClick={() => setFig("teams")} />
+        <Big k="People on site" v={e.people_on_site} onClick={() => setFig("people_on_site")} />
+        <Big k="Meals to order" v={e.people_to_feed} onClick={() => setFig("people_to_feed")} />
+        <Big k="Duration" v={`${e.duration_min} min`} refs={e.refs.duration} onClick={() => setFig("duration")} />
       </div>
       <dl className="divide-y divide-slate-100 text-sm">
         <Row k="Venue">
@@ -310,6 +314,7 @@ function AtAGlance({ plan }: { plan: Plan }) {
             <>
               <b>{plan.venue.rooms.map((r) => r.name).join(" + ")}</b> — {plan.venue.capacity} seats for {e.people_on_site} people, {rs(plan.venue.cost)}
               <From refs={plan.venue.rooms.flatMap((r) => r.refs)} />
+              <Why onClick={() => setFig("venue")} />
             </>
           ) : (
             <span className="font-semibold text-red-700">No room option fits</span>
@@ -320,6 +325,7 @@ function AtAGlance({ plan }: { plan: Plan }) {
             <>
               <b>{plan.food.tier}</b> — {plan.food.quantity} meals × {rs(plan.food.price_per_head)} {plan.food.fees.length ? `+ ${plan.food.fees.map((f) => f.label).join(", ")}` : ""} = <b>{rs(plan.food.cost)}</b>
               <From refs={plan.food.refs} />
+              <Why onClick={() => setFig("food")} />
             </>
           ) : (
             <span className="font-semibold text-red-700">No food options</span>
@@ -328,7 +334,7 @@ function AtAGlance({ plan }: { plan: Plan }) {
         <Row k="Judging">
           {plan.judging ? (
             <>
-              <b>{plan.judging.judges_used} judges</b> for {e.teams} teams ({plan.judging.judges_per_team} per team) — {plan.judging.window_min} min judging, honoraria {rs(plan.judging.honoraria)}
+              <b>{plan.judging.judges_used} judges</b> for {e.teams} teams ({plan.judging.judges_per_team} per team) <Why onClick={() => setFig("judges")} /> — {plan.judging.window_min} min judging <Why onClick={() => setFig("judging_window")} />, honoraria {rs(plan.judging.honoraria)} <Why onClick={() => setFig("honoraria")} />
               <From refs={plan.judging.refs} />
             </>
           ) : (
@@ -340,7 +346,7 @@ function AtAGlance({ plan }: { plan: Plan }) {
           {b && (
             <div>
               <div>
-                <b>{rs(b.total)}</b> of {rs(b.limit)} — <span className={b.remaining !== null && b.remaining < 0 ? "font-bold text-red-700" : "font-semibold text-emerald-700"}>{rs(b.remaining)} left</span>
+                <b>{rs(b.total)}</b> <Why onClick={() => setFig("budget_total")} /> of {rs(b.limit)} — <span className={b.remaining !== null && b.remaining < 0 ? "font-bold text-red-700" : "font-semibold text-emerald-700"}>{rs(b.remaining)} left</span> <Why onClick={() => setFig("remaining")} />
               </div>
               <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-slate-200">
                 <div className={`h-full ${b.limit !== null && b.total > b.limit ? "bg-red-600" : "bg-emerald-500"}`} style={{ width: `${used}%` }} />
@@ -349,15 +355,37 @@ function AtAGlance({ plan }: { plan: Plan }) {
           )}
         </Row>
       </dl>
+      {fig && <Explain ex={explainFigure(state, fig)} onClose={closeFig} />}
     </Box>
   );
 }
-function Big({ k, v, refs }: { k: string; v: string | number; refs?: string[] }) {
+function Why({ onClick }: { onClick: () => void }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2" title={refs?.length ? `from ${refs.join(", ")}` : undefined}>
-      <div className="text-[11px] font-semibold uppercase text-slate-500">{k}</div>
+    <button type="button" onClick={onClick} title="Click to see how this was computed" aria-label="Explain this number" className="ml-0.5 align-baseline text-[12px] text-sky-600 hover:text-sky-800">
+      ⓘ
+    </button>
+  );
+}
+function Big({ k, v, refs, onClick }: { k: string; v: string | number; refs?: string[]; onClick?: () => void }) {
+  if (!onClick)
+    return (
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-2" title={refs?.length ? `from ${refs.join(", ")}` : undefined}>
+        <div className="text-[11px] font-semibold uppercase text-slate-500">{k}</div>
+        <div className="text-xl font-black text-slate-900">{v}</div>
+      </div>
+    );
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-left hover:border-sky-300 hover:bg-sky-50"
+      title={`Click to see how this was computed${refs?.length ? ` (from ${refs.join(", ")})` : ""}`}
+    >
+      <div className="text-[11px] font-semibold uppercase text-slate-500">
+        {k} <span className="text-sky-600">ⓘ</span>
+      </div>
       <div className="text-xl font-black text-slate-900">{v}</div>
-    </div>
+    </button>
   );
 }
 function Row({ k, children }: { k: string; children: React.ReactNode }) {
