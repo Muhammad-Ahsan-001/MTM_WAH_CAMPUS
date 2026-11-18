@@ -7,9 +7,16 @@ node_modules/
 *.local
 !.env.example
 
-# Build output (Vite)
-dist/
-dist-ssr/
+# SceneBnao runtime state and outputs (running must keep git status clean)
+.scenebnao/
+out/
+
+# Official packs: never committed (no pack facts in the repo). Our own invented test data lives in fixtures/.
+packs/
+
+# Next.js / build output
+.next/
+next-env.d.ts
 *.tsbuildinfo
 coverage/
 .eslintcache
@@ -40,3 +47,7 @@ Thumbs.db
 !.vscode/extensions.json
 *.suo
 *.sw?
+
+# The official sample pack stays local (pack messages must never be committed).
+fixtures/sample-pack.txt
+.env*

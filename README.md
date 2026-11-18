@@ -1,49 +1,16 @@
-# mtm_wah_campus
+`npx tsx plan.ts <file>` — the one command: first run plans the pack, every later run applies one new message.
 
-Frontend: React + Vite (JS/TS). Backend: Supabase. Hosting: Vercel.
-Services are wired up; no application code yet.
+# SceneBnao
+
+Hackathon planner for MTM 2.0 (scenebnao.avezea.com). **The model reads, Jev decides**: one area-tagged model call turns raw
+messages into typed facts; Jev (deterministic code, 0 tokens) reconciles, solves and validates the plan.
+
+- `npx tsx reset.ts` starts a new session.
+- State: `.scenebnao/state.json`. Outputs: `out/plan.md`, `out/plan.json`, `out/trace.txt`, `out/final-plan-and-trace.md` (all gitignored).
+- Secrets go in `.env` (see `.env.example`). Official packs never go in git: keep them in `packs/` (gitignored); `fixtures/` holds only our own invented test data.
 
 | Service  | Linked to |
 |----------|-----------|
-| GitHub   | [Muhammad-Ahsan-001/MTM_WAH_CAMPUS](https://github.com/Muhammad-Ahsan-001/MTM_WAH_CAMPUS) (private) |
-| Supabase | [MTM_WAH_CAMPUS](https://supabase.com/dashboard/project/emhbqdihgbkvnaifkuno) · ref `emhbqdihgbkvnaifkuno` · org REGIS · ap-south-1 (Mumbai) |
-| Vercel   | [mtm-wah-campus](https://vercel.com/mahsan7861100-9210s-projects/mtm-wah-campus) · preset Vite · deploys from `main` · functions `bom1` (Mumbai) · Node 24.x |
-
-## Environment variables
-
-Stored on Vercel (Production, Preview, Development) and pulled locally with `vercel env pull .env.local`:
-
-| Variable | Notes |
-|----------|-------|
-| `VITE_SUPABASE_URL` | Public |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Public, browser-safe (`sb_publishable_...`) |
-
-The Supabase secret key never goes in a `VITE_` variable. Vite inlines those into the browser bundle.
-
-## Scaffolding the app (do this in the repo root)
-
-```bash
-npx create-vite@latest . --template react-ts
-```
-
-When asked about the non-empty folder, pick **Ignore files and continue**. Do **not** pick
-"Remove existing files": it deletes `.env.local`, `.vercel/` and the Supabase link.
-Then restore this repo's `.gitignore` and `README.md` (Vite overwrites both):
-
-```bash
-git checkout -- .gitignore README.md
-```
-
-Use `--template react` instead for plain JavaScript.
-
-## Config already in place
-
-- `vercel.json`: Vite preset + SPA rewrite, so client-side routes don't 404 on refresh.
-- `supabase/config.toml`: local Supabase stack, linked to the remote project. Local auth redirects use Vite's port 5173.
-
-## When you add auth
-
-Set Supabase Dashboard > Authentication > URL Configuration:
-
-- Site URL: `https://mtm-wah-campus.vercel.app`
-- Redirect URLs: `http://localhost:5173/**`, `https://mtm-wah-campus-*-mahsan7861100-9210s-projects.vercel.app/**`
+| GitHub   | [Muhammad-Ahsan-001/MTM_WAH_CAMPUS](https://github.com/Muhammad-Ahsan-001/MTM_WAH_CAMPUS) |
+| Supabase | [MTM_WAH_CAMPUS](https://supabase.com/dashboard/project/emhbqdihgbkvnaifkuno) · ap-south-1 (Mumbai) |
+| Vercel   | [mtm-wah-campus](https://vercel.com/mahsan7861100-9210s-projects/mtm-wah-campus) · Next.js · functions `bom1` · Node 24.x |
