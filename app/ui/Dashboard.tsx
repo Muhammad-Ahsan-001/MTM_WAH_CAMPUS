@@ -25,7 +25,7 @@ const CHECK_TEXT: Record<string, string> = {
 const STATUS: Record<string, { label: string; meaning: string; chip: string; row: string }> = {
   applied: { label: "Used", meaning: "Its facts are used in the plan", chip: "bg-emerald-100 text-emerald-800 border-emerald-300", row: "" },
   superseded: { label: "Replaced", meaning: "A newer message changed this value", chip: "bg-amber-100 text-amber-800 border-amber-300", row: "" },
-  irrelevant: { label: "Not relevant", meaning: "Not about planning this event", chip: "bg-slate-100 text-slate-600 border-slate-300", row: "text-slate-500" },
+  irrelevant: { label: "Info only", meaning: "Not about the plan, or information with no effect on it",chip: "bg-slate-100 text-slate-600 border-slate-300", row: "text-slate-500" },
   request: { label: "Request", meaning: "Asks for money — listed, not committed until approved", chip: "bg-sky-100 text-sky-800 border-sky-300", row: "" },
   rejected: { label: "Rejected", meaning: "Not trusted — the reason is shown", chip: "bg-red-600 text-white border-red-700", row: "bg-red-50" },
   duplicate: { label: "Duplicate", meaning: "Repeat of an earlier message — not counted twice", chip: "bg-slate-100 text-slate-600 border-slate-300", row: "text-slate-500" },

@@ -126,12 +126,20 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
 
   const reasons: string[] = [];
   const supersededBy: string[] = [];
+  const infoOnly: string[] = [];
   const activeFacts = () => all.filter((o) => o !== m).flatMap((o) => o.facts.filter((f) => f.status === "active").map((f) => ({ f, o })));
 
   for (const f of m.facts) {
     if (f.key === "info") {
       f.status = "rejected";
       f.reason = "info only";
+      continue;
+    }
+    if (!mayAuthor(m.role, f.key) && f.key === "custom") {
+      // a note from someone who can't set constraints (e.g. a judge running late) is information, not a rejection
+      f.status = "rejected";
+      f.reason = `information only (${m.role} cannot set constraints)`;
+      infoOnly.push(f.text ?? f.evidence);
       continue;
     }
     if (!mayAuthor(m.role, f.key)) {
@@ -245,7 +253,7 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
       decisions.push({ batch, kind: "rejected", ref: m.ref, reason: m.reason });
     } else {
       m.status = "irrelevant";
-      m.reason = `no plan facts (${m.summary})`;
+      m.reason = infoOnly.length ? `information only, no effect on the plan: ${infoOnly.join("; ")}` : `no plan facts (${m.summary})`;
       decisions.push({ batch, kind: "irrelevant", ref: m.ref, reason: m.reason });
     }
   } else if (requestsOnly || m.kind === "request") {
