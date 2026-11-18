@@ -5,7 +5,10 @@
 import { canon, compareRecency, fmtValue, mayAuthor, slotOf } from "../facts";
 import type { Decision, Fact, Message } from "../types";
 
-const NUMERIC_SCALARS = new Set(["event.participants", "event.staff", "event.teams", "event.budget_total", "event.team_size", "people.extra", "judging.confirmed"]);
+/** Strong markers that a quoted value is from the past (bare "was"/"tha" deliberately excluded: "budget was cut to" is a change). */
+const PAST = /\b(last year|previous year|last time|pichle saal|pichhle saal|pichli (dafa|baar)|pichle (event|hackathon)|old rate|old price|previously|used to be|purana|purani|purane|former(ly)?)\b/i;
+
+const NUMERIC_SCALARS =new Set(["event.participants", "event.staff", "event.teams", "event.budget_total", "event.team_size", "people.extra", "judging.confirmed"]);
 
 function signature(m: Message): string {
   return m.facts
@@ -73,6 +76,17 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
     return { decisions, superseded };
   }
 
+  // Code guards on model keying (deterministic, logged): history is not current; a meal cap only comes from a supplier.
+  for (const f of m.facts) {
+    if (f.key !== "info" && PAST.test(f.evidence)) {
+      decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref} "${f.evidence}" is history (evidence says past) — not used as ${f.key}` });
+      f.key = "info";
+    } else if (f.key === "food.quantity" && m.role !== "caterer" && m.role !== "other_vendor") {
+      decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref} "${f.evidence}": a meal quantity limit only counts from a supplier (sender is ${m.role})` });
+      f.key = "info";
+    }
+  }
+
   const reasons: string[] = [];
   const supersededBy: string[] = [];
   const activeFacts = () => all.filter((o) => o !== m).flatMap((o) => o.facts.filter((f) => f.status === "active").map((f) => ({ f, o })));
@@ -101,7 +115,10 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
       continue;
     }
     // venue option removal expressed as op remove/forbid on a venue key
-    if ((f.op === "remove" || f.op === "forbid") && f.key.startsWith("venue.") && f.entity && f.key !== "venue.require_attr") f.key = "venue.unavailable";
+    if ((f.op === "remove" || f.op === "forbid") && f.key.startsWith("venue.") && f.entity && f.key !== "venue.require_attr" && f.key !== "venue.unavailable") {
+      f.key = "venue.unavailable";
+      f.op = "set";
+    }
 
     // recency: one active fact per slot
     const slot = slotOf(f);
@@ -181,9 +198,9 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
   const live = m.facts.filter((f) => f.status === "active");
   const requestsOnly = live.length > 0 && live.every((f) => f.key === "budget.request");
   if (live.length === 0) {
-    if (supersededBy.length && !reasons.length) {
+    if (supersededBy.length) {
       m.status = "superseded";
-      m.reason = `older than current value — ${supersededBy.join("; ")}`;
+      m.reason = `older than current value — ${supersededBy.join("; ")}${reasons.length ? `; also ignored: ${reasons.join("; ")}` : ""}`;
       decisions.push({ batch, kind: "superseded", ref: m.ref, reason: m.reason });
     } else if (reasons.length) {
       m.status = "rejected";

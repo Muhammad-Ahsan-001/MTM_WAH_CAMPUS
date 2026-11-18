@@ -1,9 +1,14 @@
 @import "tailwindcss";
 
+/* Light theme only: dark: variants apply only under an explicit .dark class (never set), not the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
 }

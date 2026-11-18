@@ -93,11 +93,12 @@ export async function runBatch(state: SessionState, raw: string, file: string): 
       const seq = state.next_msg_seq++;
       const ref = `m${seq}`;
       const reason = `exact re-send of input from batch ${prev.batch} (${prev.file}); not counted twice — detected by code, no model call`;
-      state.messages.push({ ref, seq, batch: batchNo, sender: null, role: "unknown", date: null, relevance: "relevant", kind: "info", injection: false, summary: "exact re-send of earlier input", status: "duplicate", reason, facts: [] });
+      const dup: Message = { ref, seq, batch: batchNo, sender: null, role: "unknown", date: null, relevance: "relevant", kind: "info", injection: false, summary: "exact re-send of earlier input", status: "duplicate", reason, facts: [] };
+      state.messages.push(dup);
       batch.message_refs = [ref];
       decisions.push({ batch: batchNo, kind: "duplicate", ref, reason });
       batch.plan_valid = isValid(state.checks);
-      return finish();
+      return finish([], [], [dup]);
     }
   }
 

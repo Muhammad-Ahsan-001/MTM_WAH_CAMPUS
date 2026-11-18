@@ -4,7 +4,7 @@
  * time caps. Never asserts pack values.
  * Usage: npx tsx scripts/smoke.ts [chainIndex|all]   (default: 0 = main chain, plus formats and edge cases)
  */
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadEnv } from "../src/cli/load-env";
 import { IngestError, ingestFile } from "../src/core/ingest";
@@ -50,6 +50,8 @@ async function runChain(pack: string, updates: { file: string; expect: string }[
     if (mark === "✗") failures++;
     if (res.batch.duration_ms > 60_000) fail(`${u.file}: update over 1 min`);
   }
+  mkdirSync("out/smoke", { recursive: true });
+  writeFileSync(`out/smoke/${label}.state.json`, JSON.stringify(state, null, 1));
   const t = tokensOf(state.calls);
   lines.push(`  ${label}: ${state.calls.length} calls, tokens prompt=${t.prompt} completion=${t.completion} total=${t.total} reasoning=${t.reasoning}, ${((Date.now() - t0) / 1000).toFixed(0)} s`);
   return lines;
@@ -58,9 +60,9 @@ async function runChain(pack: string, updates: { file: string; expect: string }[
 async function main() {
   const jobs: Promise<string[]>[] = [];
   const packs = scen.packs as { pack: string; updates: { file: string; expect: string }[] }[];
-  const chains = which === "all" ? packs.map((_, i) => i) : [Number(which)];
+  const chains = which === "all" ? packs.map((_, i) => i) : which === "formats" ? [] : [Number(which)];
   for (const i of chains) jobs.push(runChain(packs[i].pack, packs[i].updates ?? [], `chain${i}`));
-  if (which === "0" || which === "all")
+  if (which === "0" || which === "all" || which === "formats")
     packs.forEach((p, i) => {
       if (i > 1 && !(p.updates ?? []).length) jobs.push(runChain(p.pack, [], `format${i}`));
     });

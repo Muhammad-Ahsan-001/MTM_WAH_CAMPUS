@@ -52,9 +52,8 @@ class View {
   }
   /** Active facts asserting a value. A "remove" fact only cancels the earlier value in its slot (no effect itself). */
   each(key: string): Fact[] {
-    return this.facts.filter(
-      (f) => f.key === key && f.status === "active" && f.op !== "remove" && !(f.op === "forbid" && key !== "schedule.forbid_window" && key !== "venue.unavailable"),
-    );
+    // "forbid venue.unavailable" = "is available" (a double negative), so forbid only asserts for forbid_window.
+    return this.facts.filter((f) => f.key === key && f.status === "active" && f.op !== "remove" && !(f.op === "forbid" && key !== "schedule.forbid_window"));
   }
 }
 
@@ -266,7 +265,9 @@ export function solve(facts: Fact[], opts: { judgesUsedOverride?: number } = {})
     const price = of("venue.price").pop();
     const unavailable = of("venue.unavailable").length > 0;
     const attrs = [...new Set([...of("venue.attr"), ...of("venue.capacity"), ...of("venue.price")].flatMap(attrTokens).filter((a) => a !== "per_hour" && a !== "hourly"))];
-    const hourly = !!price && (price.basis === "per_hour" || price.attrs.some((a) => /hour/i.test(a)) || /\b(hour|hr|ghant)/i.test(price.evidence)) && !/\b(day|event|flat|full)\b/i.test(price.evidence);
+    // Hourly only when the price is explicitly per hour ("per hour", "/hr", "hourly", "fi ghanta"), never for "a 4-hour slot".
+    const perHourText = /(per|\/|an|each|fi|har)\s*-?\s*(hour|hr|ghant)|hourly|ghanta\s*ka/i;
+    const hourly = !!price && (price.basis === "per_hour" || price.attrs.some((a) => /^(per_)?hour(ly)?$|^per_hr$/i.test(a)) || perHourText.test(price.evidence)) && !/\b(day|event|flat|full|slot|package)\b/i.test(price.evidence);
     let cost = price?.num ?? 0;
     if (price && price.basis === "per_head") cost = (price.num ?? 0) * peopleOnSite;
     else if (hourly) cost = (price!.num ?? 0) * Math.ceil(hours);

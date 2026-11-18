@@ -95,8 +95,9 @@ export function normalizeFact(f: RawFact): RawFact {
   else encodable = true; // a known key is always encodable, whatever the flag said
   // attributes an option LACKS are not attributes
   const attrs = f.attrs.filter((a) => !/(^|_)(no|not|without|none|nahi|nahin)(_|$)/i.test(a)).map((a) => a.replace(/_(yes|available|haan)$/i, ""));
-  // numeric keys without a number carry no value: treat as info
-  if (NUMERIC_KEYS.has(key) && typeof f.num !== "number" && !(key === "schedule.block" && f.text)) {
+  // numeric keys without a number carry no value: treat as info (judges need a name or a count)
+  const judgeNoValue = (key === "judging.confirmed" || key === "judging.withdrawn") && !entity && typeof f.num !== "number";
+  if (judgeNoValue || (NUMERIC_KEYS.has(key) && typeof f.num !== "number" && !(key === "schedule.block" && f.text))) {
     return { ...f, key: "info", entity, text: `${key}: ${f.text ?? ""}`, attrs, encodable: true, area: keyArea(key, f.area) };
   }
   return { ...f, key, entity, text, encodable, attrs, area: keyArea(key, f.area) };
