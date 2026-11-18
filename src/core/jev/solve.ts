@@ -274,7 +274,11 @@ export function solve(facts: Fact[], opts: { judgesUsedOverride?: number } = {})
     const usable = maxPerRoom ? Math.min(capacity, maxPerRoom) : capacity;
     return { name, capacity, usable, cost, attrs, unavailable, priced: !!price, hourly: !!hourly, refs: refsOf(cap, price, ...of("venue.attr"), ...of("venue.unavailable")) };
   });
-  const eligible = options.filter((o) => !o.unavailable && o.usable > 0 && required.every((r) => attrMatch(o.attrs, r)));
+  // Only filter on attributes the venue data talks about; an attribute no option mentions is an organiser action item.
+  const checkable = required.filter((r) => options.some((o) => attrMatch(o.attrs, r)));
+  const unverified = required.filter((r) => !checkable.includes(r));
+  for (const r of unverified) notes.push(`venue requirement "${r}": no option lists it — organiser action item, not a venue filter`);
+  const eligible = options.filter((o) => !o.unavailable && o.usable > 0 && checkable.every((r) => attrMatch(o.attrs, r)));
   let best: typeof eligible | null = null;
   let bestCost = Infinity;
   const n = Math.min(eligible.length, POLICY.maxVenueOptions);
@@ -299,14 +303,15 @@ export function solve(facts: Fact[], opts: { judgesUsedOverride?: number } = {})
       capacity: cap,
       cost: bestCost,
       headroom: cap - peopleOnSite,
-      required_attrs: required,
-      reason: `cheapest ${best.length > 1 ? `${best.length}-room set` : "option"} with capacity ≥ ${peopleOnSite}${required.length ? ` and ${required.join(", ")}` : ""}${maxPerRoom ? `, ≤ ${maxPerRoom} per room` : ""} (${eligible.length} eligible of ${options.length})`,
+      required_attrs: checkable,
+      unverified_attrs: unverified,
+      reason: `cheapest ${best.length > 1 ? `${best.length}-room set` : "option"} with capacity ≥ ${peopleOnSite}${checkable.length ? ` and ${checkable.join(", ")}` : ""}${maxPerRoom ? `, ≤ ${maxPerRoom} per room` : ""} (${eligible.length} eligible of ${options.length})`,
     };
     for (const o of best) if (!o.priced) notes.push(`venue ${o.name}: no price stated, costed at 0`);
     for (const o of best) if (o.hourly) notes.push(`venue ${o.name}: hourly price × ${Math.ceil(hours)} h`);
   } else if (options.length) {
     const maxCap = eligible.reduce((s, o) => s + o.usable, 0);
-    problems.push(`venue: no option set fits ${peopleOnSite} people${required.length ? ` with ${required.join(", ")}` : ""} (eligible capacity ${maxCap}, ${eligible.length}/${options.length} options eligible)`);
+    problems.push(`venue: no option set fits ${peopleOnSite} people${checkable.length ? ` with ${checkable.join(", ")}` : ""} (eligible capacity ${maxCap}, ${eligible.length}/${options.length} options eligible)`);
   } else problems.push("venue: no venue options stated");
 
   // ---------- Budget + food tier ----------

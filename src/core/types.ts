@@ -78,6 +78,8 @@ export interface Plan {
     cost: number;
     headroom: number;
     required_attrs: string[];
+    /** Required attributes no venue option mentions at all: cannot be checked from venue data → organiser action items. */
+    unverified_attrs: string[];
     reason: string;
   } | null;
   food: {
@@ -151,6 +153,8 @@ export interface BatchInfo {
   plan_valid: boolean;
   duration_ms: number;
   error?: string;
+  /** The batch input exactly as ingested (used for 0-token exact-duplicate detection). */
+  raw?: string;
 }
 
 export interface SessionState {

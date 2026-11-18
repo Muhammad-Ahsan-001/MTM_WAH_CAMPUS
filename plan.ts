@@ -4,7 +4,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { basename } from "node:path";
-import { loadEnv } from "./src/core/env";
+import { loadEnv } from "./src/cli/load-env";
 import { IngestError, ingestFile } from "./src/core/ingest";
 import { newSession, runBatch } from "./src/core/pipeline";
 import { mirrorToSupabase, warmUp } from "./src/core/store/supabase";

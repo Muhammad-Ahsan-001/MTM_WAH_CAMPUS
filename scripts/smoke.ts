@@ -6,7 +6,7 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { loadEnv } from "../src/core/env";
+import { loadEnv } from "../src/cli/load-env";
 import { IngestError, ingestFile } from "../src/core/ingest";
 import { newSession, runBatch } from "../src/core/pipeline";
 import { POLICY } from "../src/core/policy";

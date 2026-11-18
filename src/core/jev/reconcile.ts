@@ -14,6 +14,15 @@ function signature(m: Message): string {
     .join("#");
 }
 
+/** Same numbers on the same keys, whatever labels the model chose this time. */
+function numericSignature(m: Message): string {
+  return m.facts
+    .filter((f) => typeof f.num === "number")
+    .map((f) => `${f.key}|${f.num}`)
+    .sort()
+    .join("#");
+}
+
 export interface ReconcileOut {
   decisions: Decision[];
   /** Facts superseded by this message (so a rollback can restore them). */
@@ -46,7 +55,16 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
     return { decisions, superseded };
   }
   const sig = signature(m);
-  const dup = m.facts.length ? all.find((o) => o !== m && o.status !== "rejected" && signature(o) === sig && canon(o.sender) === canon(m.sender)) : undefined;
+  const nsig = numericSignature(m);
+  const dup = m.facts.length
+    ? all.find(
+        (o) =>
+          o !== m &&
+          o.status !== "rejected" &&
+          canon(o.sender) === canon(m.sender) &&
+          (signature(o) === sig || (!!m.date && o.date === m.date && nsig.length > 0 && numericSignature(o) === nsig)),
+      )
+    : undefined;
   if (dup) {
     m.status = "duplicate";
     m.reason = `duplicate of ${dup.ref}; not counted twice`;

@@ -6,7 +6,8 @@
  * Results are written to out/smoke/ (gitignored) for review.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { loadEnv, requireEnv } from "../src/core/env";
+import { loadEnv } from "../src/cli/load-env";
+import { requireEnv } from "../src/core/env";
 import { CallLedger, callModel } from "../src/core/llm";
 import { READING_SCHEMA, ReadingSchema, SYSTEM_PROMPT, buildReadingUser } from "../src/core/reading";
 

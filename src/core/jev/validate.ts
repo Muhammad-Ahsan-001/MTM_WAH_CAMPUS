@@ -163,9 +163,13 @@ export function validate(plan: Plan, facts: Fact[], problems: string[]): Check[]
 
   // Hard constraints from messages (one line each)
   for (const f of active) {
-    if (f.key === "venue.require_attr") {
-      const ok = !!plan.venue && plan.venue.required_attrs.length > 0;
-      checks.push({ id: "constraint", label: `${f.ref}: venue requires ${f.text ?? f.entity ?? f.attrs.join(",")}`, pass: ok, detail: ok ? `chosen rooms have it` : "no room satisfies it" });
+    if (f.key === "venue.require_attr" && f.op !== "remove") {
+      const want = [...f.attrs, f.text ?? "", f.entity ?? ""].map((a) => canon(a).replace(/\s+/g, "_")).filter(Boolean);
+      const label = `${f.ref}: venue requires ${f.text ?? f.entity ?? f.attrs.join(",")}`;
+      if (!plan.venue) checks.push({ id: "constraint", label, pass: false, detail: "no room satisfies it" });
+      else if (want.some((w) => plan.venue!.unverified_attrs.includes(w)) && !want.some((w) => plan.venue!.required_attrs.includes(w)))
+        checks.push({ id: "constraint", label, pass: false, advisory: true, detail: "no venue option lists this — organiser action item (arrange/verify on site)" });
+      else checks.push({ id: "constraint", label, pass: true, detail: `${plan.venue.rooms.map((r) => r.name).join(" + ")} ha${plan.venue.rooms.length > 1 ? "ve" : "s"} it` });
     } else if (f.key === "venue.max_per_room" && plan.venue) {
       const ok = plan.venue.rooms.every((r) => r.capacity <= (f.num ?? Infinity));
       checks.push({ id: "constraint", label: `${f.ref}: max ${f.num} per room`, pass: ok, detail: plan.venue.rooms.map((r) => `${r.name} ${r.capacity}`).join(", ") });
@@ -193,7 +197,7 @@ export function isValid(checks: Check[]): boolean {
 
 export function failedSummary(checks: Check[]): string {
   return checks
-    .filter((c) => !c.pass)
+    .filter((c) => !c.pass && !c.advisory)
     .map((c) => `${c.label}: ${c.detail}`)
     .join("; ");
 }

@@ -2,6 +2,9 @@
 
 # SceneBnao
 
+Model: gpt-5.4-mini-2026-03-17 — declared as our small model (no official list, confirmed at help desk).
+Configured via `OPENAI_MODEL=gpt-5.4-mini` with `OPENAI_REASONING_EFFORT=low`; the trace always prints the exact `model` field from each API response.
+
 Hackathon planner for MTM 2.0 (scenebnao.avezea.com). **The model reads, Jev decides**: one area-tagged model call turns raw
 messages into typed facts; Jev (deterministic code, 0 tokens) reconciles, solves and validates the plan.
 

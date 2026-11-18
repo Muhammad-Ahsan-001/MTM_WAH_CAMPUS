@@ -82,6 +82,25 @@ export async function runBatch(state: SessionState, raw: string, file: string): 
     return { batch, problems, notes, newMessages, decisions };
   };
 
+  batch.raw = raw;
+
+  // ---- Exact re-send of earlier input: decided by code, 0 tokens, no model call ----
+  if (!first) {
+    const norm = (s: string) => s.replace(/^﻿/, "").toLowerCase().replace(/\s+/g, " ").trim();
+    const n = norm(raw);
+    const prev = n.length >= 40 ? state.batches.find((b) => b.raw && norm(b.raw).includes(n)) : undefined;
+    if (prev) {
+      const seq = state.next_msg_seq++;
+      const ref = `m${seq}`;
+      const reason = `exact re-send of input from batch ${prev.batch} (${prev.file}); not counted twice — detected by code, no model call`;
+      state.messages.push({ ref, seq, batch: batchNo, sender: null, role: "unknown", date: null, relevance: "relevant", kind: "info", injection: false, summary: "exact re-send of earlier input", status: "duplicate", reason, facts: [] });
+      batch.message_refs = [ref];
+      decisions.push({ batch: batchNo, kind: "duplicate", ref, reason });
+      batch.plan_valid = isValid(state.checks);
+      return finish();
+    }
+  }
+
   // ---- Reading (1 model call, area=reading) ----
   let reading;
   try {
