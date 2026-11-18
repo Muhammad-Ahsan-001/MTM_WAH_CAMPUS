@@ -191,6 +191,9 @@ const REQUEST_ONLY = new Set(["staff", "participant", "other_vendor", "unknown"]
 export function mayAuthor(role: string, key: string): boolean {
   if (key === "info" || key === "budget.request" || key === "total") return true;
   if (role === "top_authority") return true;
+  // Restrictive requirements (accessibility, dietary needs) may come from staff/official offices: they only narrow
+  // choices — never set money, headcounts or values.
+  if ((role === "staff" || role === "unknown") && (key === "venue.require_attr" || key === "food.require")) return true;
   if (REQUEST_ONLY.has(role)) return false;
   switch (role) {
     case "finance":

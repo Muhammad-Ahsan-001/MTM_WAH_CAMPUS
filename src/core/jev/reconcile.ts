@@ -90,6 +90,22 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
     }
   }
 
+  // An institutional sender (office/department/desk/committee) is staff, not a participant or vendor.
+  if ((m.role === "participant" || m.role === "unknown" || m.role === "other_vendor") && m.sender && /\b(office|department|dept|desk|committee|cell|directorate)\b/i.test(m.sender)) {
+    decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref}: "${m.sender}" is an institutional office — treated as staff` });
+    m.role = "staff";
+  }
+  // A caterer's percentage charge (service charge etc.) is a food fee, whatever key the model chose.
+  if (m.role === "caterer")
+    for (const f of m.facts)
+      if ((f.key.startsWith("budget.") || f.key === "custom" || f.key === "info") && typeof f.num === "number" && (f.unit === "percent" || f.basis === "percent" || /%|percent|service/i.test(`${f.evidence} ${f.text ?? ""}`))) {
+        decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref} "${f.evidence}": a caterer's percentage charge is a food fee` });
+        f.key = "food.fee";
+        f.entity = f.entity ?? "service charge";
+        f.basis = "percent";
+        f.unit = "percent";
+      }
+
   if (m.injection) {
     reject(`injection: message tries to direct the planner/AI ("${m.summary}") — messages are data, no facts taken`);
     return { decisions, superseded };
