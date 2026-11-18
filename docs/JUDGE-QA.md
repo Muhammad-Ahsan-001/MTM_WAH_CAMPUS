@@ -53,6 +53,24 @@ entity names; Jev recomputes everything else in code. Typical update: 1 call, 2�
 
 **Q: What keeps git clean?** All state and outputs go to `.scenebnao/` and `out/`, both gitignored. Packs never enter git.
 
+## Event Kit (web extras, zero tokens)
+
+None of these features call a model or appear in the trace. They never run in the CLI, and they never change
+plan.json, the checks or the engine.
+
+- **Group messages:** turns the live plan into ready-to-send WhatsApp messages in English and Roman Urdu (schedule,
+  venue, lunch, judging rules, repo submission, organiser budget). *Zero tokens:* hand-written templates filled with
+  plan numbers and organiser inputs.
+- **Update broadcast:** after each accepted change, drafts the group message from the plan diff ("Update: …"). For a
+  rejected message it shows "Not broadcast: mX was rejected — reason". *Zero tokens:* the diff is computed by Jev and
+  the wording comes from templates.
+- **2D seating planner:** lays out each room's tables from the plan, seats teams, and merges neighbouring desks when a
+  table type runs out. It reports every merge, empty seat and unseated team. *Zero tokens:* plain grid code.
+- **Print pack:** A4 door and room attendance sheets, plus table patches with a QR code to the submission form.
+  *Zero tokens:* print templates and a client-side QR library.
+- **Readable report (`/report`, `out/report.html`):** the plan Markdown rendered as a clean page.
+  *Zero tokens:* escaped Markdown→HTML conversion in code.
+
 ## Model-call prediction (scored: prediction vs reality)
 
 | Batch | Predicted model-call areas |
