@@ -21,6 +21,12 @@ build/
 supabase/.branches
 supabase/.temp
 supabase/.env
+supabase/signing_keys.json
+
+# Private keys / credential files
+*.pem
+*.key
+.envrc
 
 # Logs
 npm-debug.log*
