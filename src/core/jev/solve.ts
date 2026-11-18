@@ -321,13 +321,32 @@ export function solve(facts: Fact[], opts: { judgesUsedOverride?: number } = {})
   } else problems.push("venue: no venue options stated");
 
   // ---------- Budget + food tier ----------
-  const committed: LineItem[] = v.each("budget.committed").filter((f) => typeof f.num === "number").map((f) => ({ label: f.entity ?? "committed", amount: f.num!, refs: [f.ref] }));
+  // Per-unit costs are multiplied out (per judge / per team / per head); a "cost" equal to the budget total is the
+  // budget restated, not spending.
+  const unitMult = (f: Fact) => (f.basis === "per_judge" ? judgesUsed : f.basis === "per_team" ? teams : f.basis === "per_head" ? peopleOnSite : 1);
+  const unitDetail = (f: Fact) => (unitMult(f) !== 1 ? `${unitMult(f)} × Rs ${f.num!.toLocaleString()}` : undefined);
+  const committed: LineItem[] = v
+    .each("budget.committed")
+    .filter((f) => typeof f.num === "number")
+    .filter((f) => {
+      if (budgetTotal !== null && f.num === budgetTotal) {
+        notes.push(`${f.ref}: "${f.entity}" Rs ${f.num.toLocaleString()} equals the budget total — read as the budget, not a cost`);
+        return false;
+      }
+      return true;
+    })
+    .map((f) => ({ label: f.entity ?? "committed", amount: f.num! * unitMult(f), refs: [f.ref], detail: unitDetail(f) }));
   const approvals = v.each("budget.approve").filter((a) => a.op !== "forbid");
   const requests = v.each("budget.request").map((f) => {
     const approved = approvals.some((a) => canon(a.entity) === canon(f.entity) || (canon(a.entity).length > 0 && (canon(a.entity).includes(canon(f.entity)) || canon(f.entity).includes(canon(a.entity)))));
     return { f, approved };
   });
-  const approvedItems: LineItem[] = requests.filter((r) => r.approved && typeof r.f.num === "number").map((r) => ({ label: `${r.f.entity ?? "request"} (approved)`, amount: r.f.num!, refs: [r.f.ref, ...refsOf(...approvals.filter((a) => canon(a.entity) === canon(r.f.entity)))] }));
+  // An approved request that is also listed as a committed item (same label) is counted once.
+  const sameThing = (a: string | null, b: string | null) => {
+    const ca = canon(a), cb = canon(b);
+    return !!ca && !!cb && (ca === cb || ca.includes(cb) || cb.includes(ca) || ca.split(" ").some((w) => w.length > 2 && cb.split(" ").includes(w)));
+  };
+  const approvedItems: LineItem[] = requests.filter((r) => r.approved && typeof r.f.num === "number" && !committed.some((c) => sameThing(c.label, r.f.entity))).map((r) => ({ label: `${r.f.entity ?? "request"} (approved)`, amount: r.f.num! * unitMult(r.f), detail: unitDetail(r.f), refs: [r.f.ref, ...refsOf(...approvals.filter((a) => canon(a.entity) === canon(r.f.entity)))] }));
   const honoraria = judgesUsed * fee;
   const fees = v.each("food.fee").filter((f) => typeof f.num === "number");
   const taxFact = v.get("budget.tax");

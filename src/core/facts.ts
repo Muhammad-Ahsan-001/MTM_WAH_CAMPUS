@@ -209,19 +209,24 @@ export function mayAuthor(role: string, key: string): boolean {
 }
 
 // ---------- Recency ----------
-function parseDate(d: string | null): { day: string; time: string | null } | null {
+/** Accepts "YYYY-MM-DD[THH:MM]" or year-less "MM-DD[THH:MM]" (packs often omit the year). */
+function parseDate(d: string | null): { year: string | null; md: string; time: string | null } | null {
   if (!d) return null;
-  const m = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}))?/.exec(d.trim());
+  const m = /^(?:(\d{4})-)?(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}:\d{2}))?/.exec(d.trim());
   if (!m) return null;
-  return { day: m[1], time: m[2] ?? null };
+  return { year: m[1] ?? null, md: `${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`, time: m[4] ? m[4].padStart(5, "0") : null };
 }
 
-/** > 0 when message a is more recent than b. Latest date wins; undated or same-day-without-time falls back to arrival order. */
+/**
+ * > 0 when message a is more recent than b. Latest date wins (years compared only when both state one, so a
+ * year-less pack still orders by month-day); undated or same-day-without-time falls back to arrival order.
+ */
 export function compareRecency(a: Pick<Message, "date" | "seq">, b: Pick<Message, "date" | "seq">): number {
   const da = parseDate(a.date);
   const db = parseDate(b.date);
   if (da && db) {
-    if (da.day !== db.day) return da.day < db.day ? -1 : 1;
+    if (da.year && db.year && da.year !== db.year) return da.year < db.year ? -1 : 1;
+    if (da.md !== db.md) return da.md < db.md ? -1 : 1;
     if (da.time && db.time && da.time !== db.time) return da.time < db.time ? -1 : 1;
   }
   return a.seq - b.seq;

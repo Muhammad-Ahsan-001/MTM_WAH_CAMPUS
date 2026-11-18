@@ -61,7 +61,7 @@ async function runChain(pack: string, updates: { file: string; expect: string }[
 async function main() {
   const jobs: Promise<string[]>[] = [];
   const packs = scen.packs as { pack: string; updates: { file: string; expect: string }[] }[];
-  const chains = which === "all" ? packs.map((_, i) => i) : which === "formats" ? [] : [Number(which)];
+  const chains = which === "all" ? packs.map((_, i) => i) : which === "formats" ? [] : which.split(",").map(Number);
   for (const i of chains) jobs.push(runChain(packs[i].pack, packs[i].updates ?? [], `chain${i}`));
   if (which === "0" || which === "all" || which === "formats")
     packs.forEach((p, i) => {

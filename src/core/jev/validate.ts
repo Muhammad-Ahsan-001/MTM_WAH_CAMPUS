@@ -111,7 +111,8 @@ export function validate(plan: Plan, facts: Fact[], problems: string[]): Check[]
         for (const f of active.filter((x) => x.key === "schedule.forbid_window")) {
           const [a, c] = (f.text ?? "").split(/\s*(?:-|–|—|\bto\b|\btak\b)\s*/i).map(toMin);
           if (a === null || c === null || a === undefined || c === undefined) continue;
-          const hit = blocks.find((b) => b.kind !== "build" && b.start < c - startMin && a - startMin < b.start + b.minutes);
+          // a block pinned to its own stated time is exempt (the window often describes that very block)
+          const hit = blocks.find((b) => b.kind !== "build" && !b.fixed && b.start < c - startMin && a - startMin < b.start + b.minutes);
           if (hit) errs.push(`${hit.label} overlaps forbidden window ${f.text}`);
         }
     }

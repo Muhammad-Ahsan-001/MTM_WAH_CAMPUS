@@ -16,7 +16,7 @@ export const POLICY = {
   /** Policy: one judge per team unless a message requires more. */
   judgesPerTeam: 1,
   /** Policy: preferred food tier labels, in order. */
-  standardTierLabels: ["standard", "regular", "default", "normal", "basic"],
+  standardTierLabels: ["standard", "std", "regular", "default", "normal"],
   /** Policy: a percent reserve/tax applies to the subtotal of spending. */
   percentBase: "subtotal" as const,
   /** Policy: hard caps on model calls. */

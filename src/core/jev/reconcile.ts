@@ -8,10 +8,21 @@ import type { Decision, Fact, Message } from "../types";
 /** Strong markers that a quoted value is from the past (bare "was"/"tha" deliberately excluded: "budget was cut to" is a change). */
 const PAST = /\b(last year|previous year|last time|pichle saal|pichhle saal|pichli (dafa|baar)|pichle (event|hackathon)|old rate|old price|previously|used to be|purana|purani|purane|former(ly)?)\b/i;
 
+/** Same sender if one name's meaningful words are all contained in the other's ("Student society" ⊂ "Student Society (Hamza)"). */
+const CHANNEL_WORDS = new Set(["whatsapp", "email", "mail", "sms", "msg", "message", "via", "re", "fw", "fwd", "from"]);
+function sameSender(a: string | null, b: string | null): boolean {
+  const words = (s: string | null) => canon(s).split(" ").filter((w) => w.length > 1 && !CHANNEL_WORDS.has(w));
+  const wa = words(a), wb = words(b);
+  if (!wa.length || !wb.length) return false;
+  return wa.every((w) => wb.includes(w)) || wb.every((w) => wa.includes(w));
+}
+
 /** Authority rank used only for the role lock (generic roles). */
 const RANK: Record<string, number> = {
   top_authority: 5, finance: 4, venue_provider: 3, caterer: 3, judging_coordinator: 3, judge: 2, staff: 1, participant: 0, other_vendor: 0, unknown: 0,
 };
+
+const DIET = /\b(veg|vegetarian|vegan|halal|gluten|diabetic|jain|allerg\w*|kosher|lactose|nut[- ]?free|sabzi)\b/i;
 
 /** Markers that the quoted value is the current one (beats a past marker in the same evidence). */
 const CURRENT = /\b(final|now|ab|abhi|is dafa|is baar|this year|this time|current|revised|updated|new|naya|nayi)\b/i;
@@ -58,10 +69,25 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
   };
 
   // Role lock: a sender keeps the role of their first message; a later claim to a higher role is not accepted.
-  const prior = m.sender ? all.find((o) => o !== m && o.seq < m.seq && canon(o.sender) === canon(m.sender) && o.role !== "unknown") : undefined;
+  const prior = m.sender ? all.find((o) => o !== m && o.seq < m.seq && sameSender(o.sender, m.sender) && o.role !== "unknown") : undefined;
   if (prior && RANK[m.role] > RANK[prior.role]) {
     decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref}: ${m.sender} wrote as ${prior.role} in ${prior.ref}; claim to be ${m.role} not accepted (role locked)` });
     m.role = prior.role;
+  }
+
+  // A sender typed only as unknown/other_vendor whose name says what they supply gets that provider role
+  // (generic words only; organiser/finance roles are never inferred from a name).
+  if ((m.role === "unknown" || m.role === "other_vendor") && m.sender) {
+    const s = canon(m.sender);
+    const inferred = /cater|kitchen|food|lunch|meal|tiffin|bakery|restaurant|dhaba|bawarchi/.test(s)
+      ? "caterer"
+      : /\bhall|venue|banquet|auditorium|spaces?\b|rooms?\b|booking|marquee|lawn/.test(s)
+        ? "venue_provider"
+        : null;
+    if (inferred && m.facts.some((f) => mayAuthor(inferred, f.key)) && !m.facts.some((f) => f.key.startsWith("event.") || f.key.startsWith("budget."))) {
+      decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref}: sender "${m.sender}" supplies ${inferred === "caterer" ? "food" : "venues"} — treated as ${inferred}` });
+      m.role = inferred;
+    }
   }
 
   if (m.injection) {
@@ -96,6 +122,19 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
 
   // Code guards on model keying (deterministic, logged): history is not current; a meal cap only comes from a supplier.
   for (const f of m.facts) {
+    // "teams of N" / "N-member teams" / "N ka team" / "N per team" state a team SIZE, never a team count
+    if (f.key === "event.teams" && typeof f.num === "number") {
+      const size = /teams?\s+of\s+(\d+)|(\d+)\s*[- ]?(?:member|person|people|student|participant)s?\s+teams?|(\d+)\s+(?:ka|ki|ke)\s+team|(\d+)\s+(?:per|in each|in a)\s+team/i.exec(f.evidence);
+      if (size && Number(size[1] ?? size[2] ?? size[3] ?? size[4]) === f.num) {
+        decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref} "${f.evidence}" states a team size, not a team count — read as event.team_size=${f.num}` });
+        f.key = "event.team_size";
+      }
+    }
+    // a diet group is a subset of the meal count, never extra people
+    if ((f.key === "feed.include" || f.key === "people.extra") && DIET.test(`${f.entity ?? ""} ${f.evidence}`)) {
+      decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref} "${f.evidence}": a diet count is part of the meal count — read as food.require` });
+      f.key = "food.require";
+    }
     if (f.key !== "info" && PAST.test(f.evidence) && !CURRENT.test(f.evidence)) {
       decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref} "${f.evidence}" is history (evidence says past) — not used as ${f.key}` });
       f.key = "info";
@@ -124,6 +163,29 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
       } else if (f !== best) f.key = "info";
   }
 
+  const activeOf = (key: string) => all.filter((o) => o !== m).flatMap((o) => o.facts.filter((g) => g.status === "active" && g.key === key && g.op !== "remove"));
+
+  // Judges: "N withdrew, we now have M" — if M + N equals the previous count, M is already net of the withdrawals.
+  const newCount = m.facts.find((f) => f.key === "judging.confirmed" && !f.entity && typeof f.num === "number");
+  const withdrawCounts = m.facts.filter((f) => f.key === "judging.withdrawn" && !f.entity && typeof f.num === "number");
+  const prevCount = activeOf("judging.confirmed").filter((g) => !g.entity && typeof g.num === "number").pop()?.num;
+  const prevNamed = activeOf("judging.confirmed").filter((g) => g.entity).length;
+  const prevTotal = Math.max(prevCount ?? 0, prevNamed);
+  if (newCount && withdrawCounts.length && prevTotal && newCount.num! + withdrawCounts.reduce((s, f) => s + f.num!, 0) === prevTotal) {
+    for (const w of withdrawCounts) w.key = "info";
+    decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref}: ${newCount.num} confirmed is already net of the withdrawals (${prevTotal} before) — not subtracted twice` });
+  }
+  // Staff increase + "feed this group" of the same size in one message = the same people (staff are fed already).
+  for (const s of m.facts.filter((f) => f.key === "event.staff" && typeof f.num === "number")) {
+    const prevStaff = activeOf("event.staff").pop()?.num ?? 0;
+    const delta = s.op === "add" ? s.num! : s.num! - prevStaff;
+    if (delta <= 0) continue;
+    for (const g of m.facts.filter((f) => (f.key === "feed.include" || f.key === "people.extra") && f.num === delta)) {
+      decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref}: ${g.entity ?? "group"} (${delta}) is the staff increase already — staff are on site and fed, not counted twice` });
+      g.key = "info";
+    }
+  }
+
   const reasons: string[] = [];
   const supersededBy: string[] = [];
   const infoOnly: string[] = [];
@@ -140,6 +202,13 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
       f.status = "rejected";
       f.reason = `information only (${m.role} cannot set constraints)`;
       infoOnly.push(f.text ?? f.evidence);
+      continue;
+    }
+    if (!mayAuthor(m.role, f.key) && f.key !== "event.budget_total" && !activeFacts().some(({ f: g }) => slotOf(g) === slotOf(f))) {
+      // nothing to override: an offer/note from someone who can't set values is information, not a rejection
+      f.status = "rejected";
+      f.reason = `information only (${m.role} cannot set ${f.key})`;
+      infoOnly.push(`${f.key}${f.entity ? `[${f.entity}]` : ""} ${fmtValue(f)}`.trim());
       continue;
     }
     if (!mayAuthor(m.role, f.key)) {
