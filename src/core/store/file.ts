@@ -1,6 +1,7 @@
 /** File store for the CLI: state in .scenebnao/state.json, outputs in out/ (both gitignored). */
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { reportHtml } from "../md-html";
 import { finalMarkdown, planJson, planMarkdown } from "../render";
 import { renderTraceFile } from "../trace";
 import type { SessionState } from "../types";
@@ -31,6 +32,7 @@ export function writeOutputs(state: SessionState): void {
   atomicWrite(join(OUT_DIR, "plan.json"), JSON.stringify(planJson(state), null, 2));
   atomicWrite(join(OUT_DIR, "trace.txt"), renderTraceFile(state));
   atomicWrite(join(OUT_DIR, "final-plan-and-trace.md"), finalMarkdown(state));
+  atomicWrite(join(OUT_DIR, "report.html"), reportHtml(finalMarkdown(state), "SceneBnao plan"));
 }
 
 export function resetState(): void {

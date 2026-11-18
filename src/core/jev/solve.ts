@@ -1,7 +1,7 @@
 /**
  * Jev solve: computes every figure and choice from active facts. Zero tokens. No pack values live here.
  */
-import { canon } from "../facts";
+import { canon, saysUnavailable } from "../facts";
 import { POLICY } from "../policy";
 import type { Fact, LineItem, Plan, ScheduleBlock } from "../types";
 
@@ -17,7 +17,12 @@ const isPct = (f?: Fact) => !!f && (f.unit === "percent" || f.basis === "percent
 
 export function toMin(clock: string | null | undefined): number | null {
   if (!clock) return null;
-  const m = /(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?/i.exec(clock.trim());
+  const s = clock.trim();
+  // prefer a real HH:MM (so "2031-03-22T10:00" reads 10:00, not the year's digits), then "10am"/"10 pm", then a bare hour
+  const hm = /(?:^|[^\d])(\d{1,2})[:.](\d{2})(?!\d)\s*(am|pm)?/i.exec(s);
+  const ha = hm ? null : /(?:^|[^\d])(\d{1,2})\s*(am|pm)\b/i.exec(s);
+  const hb = hm || ha ? null : /^(\d{1,2})$/.exec(s);
+  const m = hm ?? (ha ? [ha[0], ha[1], undefined, ha[2]] : hb ? [hb[0], hb[1], undefined, undefined] : null);
   if (!m) return null;
   let h = Number(m[1]);
   const mm = m[2] ? Number(m[2]) : 0;
@@ -263,7 +268,7 @@ export function solve(facts: Fact[], opts: { judgesUsedOverride?: number } = {})
     const of = (k: string) => v.each(k).filter((f) => canon(f.entity) === c);
     const cap = of("venue.capacity").pop();
     const price = of("venue.price").pop();
-    const unavailable = of("venue.unavailable").length > 0;
+    const unavailable = facts.some((f) => f.key === "venue.unavailable" && f.status === "active" && canon(f.entity) === c && saysUnavailable(f));
     const attrs = [...new Set([...of("venue.attr"), ...of("venue.capacity"), ...of("venue.price")].flatMap(attrTokens).filter((a) => a !== "per_hour" && a !== "hourly"))];
     // Hourly only when the price is explicitly per hour ("per hour", "/hr", "hourly", "fi ghanta"), never for "a 4-hour slot".
     const perHourText = /(per|\/|an|each|fi|har)\s*-?\s*(hour|hr|ghant)|hourly|ghanta\s*ka/i;

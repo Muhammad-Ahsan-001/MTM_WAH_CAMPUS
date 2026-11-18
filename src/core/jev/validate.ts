@@ -2,7 +2,7 @@
  * Jev validate: the six scored checks (each with numbers) plus one line per hard constraint from the messages.
  * Everything is recomputed from the plan and the facts; nothing is trusted from the solver blindly.
  */
-import { canon } from "../facts";
+import { canon, saysUnavailable } from "../facts";
 import { POLICY } from "../policy";
 import type { Check, Fact, Plan } from "../types";
 import { hasClock, isBuildLabel, toMin } from "./solve";
@@ -67,7 +67,7 @@ export function validate(plan: Plan, facts: Fact[], problems: string[]): Check[]
       if (maxRooms && v.rooms.length > maxRooms) errs.push(`${v.rooms.length} rooms > max ${maxRooms}`);
       for (const r of v.rooms) {
         if (maxPerRoom && r.capacity > maxPerRoom) errs.push(`${r.name} ${r.capacity} > max per room ${maxPerRoom}`);
-        if (active.some((f) => f.key === "venue.unavailable" && f.op !== "remove" && f.op !== "forbid" && canon(f.entity) === canon(r.name))) errs.push(`${r.name} is unavailable`);
+        if (active.some((f) => f.key === "venue.unavailable" && saysUnavailable(f) && canon(f.entity) === canon(r.name))) errs.push(`${r.name} is unavailable`);
       }
     }
     checks.push({

@@ -29,4 +29,20 @@ export const POLICY = {
   },
   /** Policy: largest venue option set we enumerate (2^n subsets). */
   maxVenueOptions: 16,
+  /** Policy: seating plan (src/core/jev/seating.ts). Generic layout choices, not facts from any pack. */
+  seating: {
+    /** POLICY: every room gets its own staff/registration desk; staff at the desk count toward that room's capacity. */
+    staffDeskPerRoom: true,
+    /** POLICY: label of the per-room staff desk. */
+    deskLabel: "Staff / registration desk",
+    /** POLICY: seats per team table, used only when neither participants nor team size is known. */
+    seatsPerTableDefault: 4,
+    /** POLICY: judges sit with/near their teams, so they take no table seat; each judge still counts once toward
+     *  capacity, in the room of their first assigned team (they walk between rooms while judging). */
+    judgesTakeTableSeats: false,
+    /** POLICY: tables are numbered globally across rooms with this prefix (T1..Tn). */
+    tablePrefix: "T",
+    /** POLICY: label used for teams when no judging plan names them ("Team 1".."Team N"). */
+    teamLabelPrefix: "Team ",
+  },
 };

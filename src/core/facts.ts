@@ -68,12 +68,20 @@ export function normalizeFact(f: RawFact): RawFact {
   // the model sometimes writes a DSL key inside a custom fact: "venue.require_attr(x): ..."
   if (key === "custom" && text) {
     const k = /^\s*([a-z_]+\.[a-z_]+)\s*[\[(]([^\])]*)[\])]\s*:?\s*(.*)$/i.exec(text);
+    const plain = /^\s*([a-z_.]+)\s*[:=]\s*(.+)$/i.exec(text); // "budget_total: 66500" / "event.teams = 12"
     if (k && KEYSET.has(k[1].toLowerCase())) {
       key = k[1].toLowerCase();
       if (key === "venue.require_attr") text = k[2];
       else {
         entity = entity ?? (k[2] || null);
         text = k[3] || null;
+      }
+    } else if (plain) {
+      const cand = plain[1].toLowerCase();
+      const full = KEYSET.has(cand) ? cand : KEYSET.has(`event.${cand}`) ? `event.${cand}` : ALIASES[cand] ?? null;
+      if (full && full !== "custom" && full !== "info") {
+        key = full;
+        text = typeof f.num === "number" ? null : plain[2].trim();
       }
     }
   }
@@ -83,6 +91,12 @@ export function normalizeFact(f: RawFact): RawFact {
     if (!entity) entity = m[2].trim() || null;
   }
   key = ALIASES[key] ?? key;
+  // a bare or mis-prefixed name ("budget_total", "venue.minutes_per_team") that matches exactly one key's suffix
+  if (!KEYSET.has(key)) {
+    const suffix = key.split(".").pop()!;
+    const hits = KEYS.filter((k) => k.split(".").pop() === suffix);
+    if (hits.length === 1) key = hits[0];
+  }
   if (entity && NULLISH.test(entity)) entity = null;
   if (entity && !ENTITY_KEYS.has(key) && key !== "venue.require_attr" && key !== "custom") entity = null;
   let encodable = f.encodable;
@@ -95,6 +109,16 @@ export function normalizeFact(f: RawFact): RawFact {
   else encodable = true; // a known key is always encodable, whatever the flag said
   // attributes an option LACKS are not attributes
   const attrs = f.attrs.filter((a) => !/(^|_)(no|not|without|none|nahi|nahin)(_|$)/i.test(a)).map((a) => a.replace(/_(yes|available|haan)$/i, ""));
+  // a judge named only in text: the name is the entity ("1 judge" per name is not a count)
+  if ((key === "judging.confirmed" || key === "judging.withdrawn") && !entity && text && /[a-z]/i.test(text) && !/,|\band\b/i.test(text) && (f.num === null || f.num === 1)) {
+    entity = text.trim();
+    text = null;
+    f = { ...f, num: null };
+  }
+  // a schedule block needs a label; an unlabeled one (often the event's own start/end) is info
+  if (key === "schedule.block" && !entity) {
+    return { ...f, key: "info", entity: null, text: `schedule.block: ${f.text ?? f.num ?? ""}`, encodable: true, area: keyArea(key, f.area) };
+  }
   // numeric keys without a number carry no value: treat as info (judges need a name or a count)
   const judgeNoValue = (key === "judging.confirmed" || key === "judging.withdrawn") && !entity && typeof f.num !== "number";
   if (judgeNoValue || (NUMERIC_KEYS.has(key) && typeof f.num !== "number" && !(key === "schedule.block" && f.text))) {
@@ -110,6 +134,17 @@ const NUMERIC_KEYS = new Set([
   "judging.fee", "judging.minutes_per_team", "judging.max_teams_per_judge", "judging.judges_per_team",
   "budget.committed", "budget.reserve", "budget.tax", "people.extra", "total", "schedule.block",
 ]);
+
+/**
+ * Is this venue.unavailable fact saying the option is unavailable? The model's op is ambiguous for double negatives
+ * ("forbid unavailable" has meant both), so the quoted evidence decides; the op only breaks a tie.
+ */
+export function saysUnavailable(f: Pick<RawFact, "op" | "evidence" | "text">): boolean {
+  const s = `${f.evidence} ${f.text ?? ""}`;
+  if (/\b(not|no longer|nahi|nahin|na)\s+(be\s+)?(available|free|open|khali)|unavailable|\bbooked\b|\bclosed\b|cancel|maintenance|renovat|occupied|out of service|\bband\b|not free/i.test(s)) return true;
+  if (/\b(free|available|open|khali|vacant)\b/i.test(s)) return false;
+  return f.op !== "remove" && f.op !== "forbid";
+}
 
 /** Ops that negate rather than assert a value. */
 export const NEGATING = new Set(["remove", "forbid"]);

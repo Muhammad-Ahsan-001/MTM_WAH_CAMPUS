@@ -41,6 +41,7 @@ Facts: one per atomic value; extract only what is stated; never infer, compute o
 - attrs: short snake_case attributes the option HAS (omit ones it lacks).
 - Statements about who decides or who handles what are role context: key "info". Never repeat as custom something a key already captures (a spending cap is event.budget_total).
 - A real planning constraint that fits no key: key "custom", encodable=false, text = the constraint in max 20 words.
+- Whenever the event's own time range is given, emit both event.start and event.end (text "HH:MM").
 - Scalar keys (no [entity]) take entity=null. schedule.block text = that block's own clock time only if the message states one for it; else null.
 Keys ([entity]):
 event.participants event.team_size event.teams event.staff event.duration_min event.start event.end event.budget_total

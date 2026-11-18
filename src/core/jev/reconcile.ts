@@ -8,7 +8,13 @@ import type { Decision, Fact, Message } from "../types";
 /** Strong markers that a quoted value is from the past (bare "was"/"tha" deliberately excluded: "budget was cut to" is a change). */
 const PAST = /\b(last year|previous year|last time|pichle saal|pichhle saal|pichli (dafa|baar)|pichle (event|hackathon)|old rate|old price|previously|used to be|purana|purani|purane|former(ly)?)\b/i;
 
-const NUMERIC_SCALARS =new Set(["event.participants", "event.staff", "event.teams", "event.budget_total", "event.team_size", "people.extra", "judging.confirmed"]);
+/** Markers that the quoted value is the current one (beats a past marker in the same evidence). */
+const CURRENT = /\b(final|now|ab|abhi|is dafa|is baar|this year|this time|current|revised|updated|new|naya|nayi)\b/i;
+/** Weak past markers: only used to break a tie between two values for the same slot in one message. */
+const WEAK_PAST = /\b(tha|thi|thay|the|was|were|pehle|pehlay|earlier|previous|last)\b/i;
+const MONEY_KEYS = new Set(["event.budget_total", "venue.price", "food.price", "food.fee", "judging.fee", "budget.committed", "budget.reserve", "budget.request"]);
+
+const NUMERIC_SCALARS = new Set(["event.participants", "event.staff", "event.teams", "event.budget_total", "event.team_size", "people.extra", "judging.confirmed"]);
 
 function signature(m: Message): string {
   return m.facts
@@ -78,13 +84,32 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
 
   // Code guards on model keying (deterministic, logged): history is not current; a meal cap only comes from a supplier.
   for (const f of m.facts) {
-    if (f.key !== "info" && PAST.test(f.evidence)) {
+    if (f.key !== "info" && PAST.test(f.evidence) && !CURRENT.test(f.evidence)) {
       decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref} "${f.evidence}" is history (evidence says past) — not used as ${f.key}` });
       f.key = "info";
     } else if (f.key === "food.quantity" && m.role !== "caterer" && m.role !== "other_vendor") {
       decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref} "${f.evidence}": a meal quantity limit only counts from a supplier (sender is ${m.role})` });
       f.key = "info";
     }
+  }
+
+  // One value per slot within a single message: keep the best-supported candidate, log the rest.
+  const bySlot = new Map<string, Fact[]>();
+  for (const f of m.facts) {
+    if (["info", "custom", "total", "budget.request", "venue.attr", "venue.require_attr", "schedule.forbid_window"].includes(f.key)) continue;
+    const s = slotOf(f);
+    bySlot.set(s, [...(bySlot.get(s) ?? []), f]);
+  }
+  for (const group of bySlot.values()) {
+    if (group.length < 2) continue;
+    const score = (f: Fact) =>
+      (MONEY_KEYS.has(f.key) && f.unit === "pkr" ? 4 : 0) + (/\d/.test(f.evidence) ? 2 : 0) - (WEAK_PAST.test(f.evidence) ? 5 : 0) + (f.op === "set" ? 1 : 0);
+    const best = [...group].sort((a, b) => score(b) - score(a) || group.indexOf(a) - group.indexOf(b))[0];
+    for (const f of group)
+      if (f !== best && (f.num !== best.num || f.text !== best.text)) {
+        decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref} gives ${f.key}${f.entity ? `[${f.entity}]` : ""} twice: kept ${fmtValue(best)} ("${best.evidence}"), ignored ${fmtValue(f)} ("${f.evidence}")` });
+        f.key = "info";
+      } else if (f !== best) f.key = "info";
   }
 
   const reasons: string[] = [];

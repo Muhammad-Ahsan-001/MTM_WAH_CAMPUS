@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { seatingPlan } from "../../src/core/jev/seating";
 import { fmtClock, toMin } from "../../src/core/jev/solve";
 import { finalMarkdown } from "../../src/core/render";
 import type { CallRecord } from "../../src/core/llm";
@@ -176,6 +177,9 @@ export default function Dashboard() {
           <button onClick={download} disabled={!state} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-100 disabled:opacity-40">
             Download plan + trace (.md)
           </button>
+          <a href="/report" className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+            Open readable report
+          </a>
         </div>
       </header>
       <p className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
@@ -573,6 +577,7 @@ function PlanDetails({ plan, checks }: { plan: Plan; checks: Check[] }) {
   const e = plan.event;
   const b = plan.budget;
   const constraints = checks.filter((c) => c.id === "constraint");
+  const seating = seatingPlan(plan);
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Box title="Venue" hint={plan.venue?.reason}>
@@ -681,6 +686,53 @@ function PlanDetails({ plan, checks }: { plan: Plan; checks: Check[] }) {
               </tr>
             </tbody>
           </table>
+        )}
+      </Box>
+      <Box
+        title="Seating plan"
+        hint={`${seating.totals.tables} tables · ${seating.totals.participants} participants seated · ${seating.totals.seated} of ${seating.totals.capacity} places used (staff desk and judges included)`}
+        className="lg:col-span-2"
+      >
+        {seating.rooms.length === 0 && <p className="text-sm text-slate-500">No rooms to seat.</p>}
+        <div className="space-y-4">
+          {seating.rooms.map((r) => (
+            <div key={r.name}>
+              <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                <span>
+                  <b>{r.name}</b>
+                  <From refs={r.refs} />
+                </span>
+                <span className={r.seated > r.capacity ? "font-bold text-red-700" : "text-slate-600"}>
+                  <b>{r.seated}</b> / {r.capacity} seated
+                  {r.desk ? ` · ${r.desk.label}: ${r.desk.staff} staff` : ""}
+                  {r.judges.length ? ` · judges here: ${r.judges.join(", ")}` : ""}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-xs sm:grid-cols-3 lg:grid-cols-4">
+                {r.tables.map((t) => (
+                  <div key={t.table} className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                    <b>{t.table}</b> · {t.team} · {t.seats} seats{t.judges.length ? ` · ${t.judges.join(", ")}` : ""}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        {seating.unseated.length > 0 && (
+          <div className="mt-3 grid grid-cols-2 gap-1 text-xs sm:grid-cols-3 lg:grid-cols-4">
+            {seating.unseated.map((t) => (
+              <div key={t.team} className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-amber-800">
+                <b>Unseated</b> · {t.team} · {t.seats} seats{t.judges.length ? ` · ${t.judges.join(", ")}` : ""}
+              </div>
+            ))}
+          </div>
+        )}
+        {seating.notes.length > 0 && (
+          <ul className="mt-3 space-y-1 text-sm text-amber-700">
+            {seating.notes.map((n, i) => (
+              <li key={i}>⚠ {n}</li>
+            ))}
+          </ul>
         )}
       </Box>
       {constraints.length > 0 && (

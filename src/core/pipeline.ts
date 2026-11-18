@@ -39,7 +39,7 @@ export function currentFactsIndex(s: SessionState): string {
   for (const m of s.messages)
     for (const f of m.facts)
       if (f.status === "active")
-        lines.push(`${f.key}${f.entity ? `[${f.entity}]` : ""}=${fmtValue(f)} (${m.role}${m.date ? `, ${m.date}` : ""})`);
+        lines.push(`${f.key}${f.entity ? `[${f.entity}]` : ""}=${fmtValue(f) || f.attrs.join(",")} (${m.role}${m.date ? `, ${m.date}` : ""})`);
   return lines.join("\n");
 }
 
@@ -200,7 +200,20 @@ export async function runBatch(state: SessionState, raw: string, file: string): 
   }
 
   // ---- Area fallback for constraints the DSL cannot express (≤1 per area per batch) ----
-  const unencoded = newMessages.flatMap((m) => m.facts.filter((f) => f.key === "custom" && f.status === "active"));
+  // A custom constraint whose number another fact in the same message already carries is redundant: no call (0 tokens).
+  const unencoded = newMessages.flatMap((m) =>
+    m.facts.filter((f) => {
+      if (f.key !== "custom" || f.status !== "active") return false;
+      const dupOf = typeof f.num === "number" ? m.facts.find((g) => g !== f && g.status === "active" && g.key !== "custom" && g.key !== "info" && g.num === f.num) : undefined;
+      if (dupOf) {
+        f.status = "rejected";
+        f.reason = `already captured as ${dupOf.key}`;
+        decisions.push({ batch: batchNo, kind: "info", ref: m.ref, reason: `${m.ref} "${f.text}" already captured as ${dupOf.key}=${dupOf.num} — no fallback call` });
+        return false;
+      }
+      return true;
+    }),
+  );
   if (unencoded.length) {
     const fb = await runFallbacks(ledger, unencoded, state, res.plan);
     decisions.push(...fb.decisions);
