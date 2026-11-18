@@ -1,0 +1,44 @@
+/* Event Kit print styles: A4, hide app chrome, page breaks per sheet. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  .kit-chrome,
+  .kit-noprint {
+    display: none !important;
+  }
+  .kit-root {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .kit-sheet {
+    break-after: page;
+    page-break-after: always;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .kit-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+  .kit-sheet table tr {
+    break-inside: avoid;
+  }
+  .kit-patches {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0 !important;
+  }
+  .kit-patch {
+    height: 68mm;
+    break-inside: avoid;
+    border: 1px dashed #64748b !important;
+    border-radius: 0 !important;
+  }
+}
