@@ -190,10 +190,12 @@ export function solve(facts: Fact[], opts: { judgesUsedOverride?: number } = {})
     };
     if (!put("Opening", "opening", 0, openLen, refsOf(fixedOpening), 0, D, fixedOpening?.id)) return { blocks: placed, ok: false, why: "no slot for opening" };
     if (!put("Closing & results", "closing", D - closeLen, closeLen, refsOf(fixedClosing), 0, D, fixedClosing?.id)) return { blocks: placed, ok: false, why: "no slot for closing" };
-    const closing = placed.find((b) => b.kind === "closing")!;
-    if (!put("Judging", "judging", closing.start - judgeLen, judgeLen, refsOf(fixedJudging), openLen, closing.start, fixedJudging?.id))
+    // a 0-minute block is not placed, so fall back to the boundary instead of reading a missing block
+    const closingStart = placed.find((b) => b.kind === "closing")?.start ?? D;
+    if (judgeLen > 0 && !put("Judging", "judging", closingStart - judgeLen, judgeLen, refsOf(fixedJudging), openLen, closingStart, fixedJudging?.id))
       return { blocks: placed, ok: false, why: `judging window ${judgeLen} min does not fit before closing` };
-    const judging = placed.find((b) => b.kind === "judging")!;
+    const judgingStart = placed.find((b) => b.kind === "judging")?.start ?? closingStart;
+    const judging = { start: judgingStart };
     if (lunchLen > 0) {
       const target = Math.round((openLen + (judging.start - openLen) / 2 - lunchLen / 2) / 5) * 5;
       if (!put("Lunch", "lunch", target, lunchLen, refsOf(fixedLunch), openLen, judging.start, fixedLunch?.id)) return { blocks: placed, ok: false, why: "no slot for lunch" };

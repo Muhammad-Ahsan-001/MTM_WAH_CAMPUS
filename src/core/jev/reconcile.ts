@@ -95,6 +95,13 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
     decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref}: "${m.sender}" is an institutional office — treated as staff` });
     m.role = "staff";
   }
+  // No organiser in the session yet: the first official (non-participant) sender who sets the event basics
+  // (headcount or budget) is the event authority. Participants never qualify; later senders never override one.
+  if ((m.role === "staff" || m.role === "unknown" || m.role === "other_vendor") && !all.some((o) => o !== m && o.role === "top_authority") &&
+      m.facts.some((f) => (f.key === "event.participants" || f.key === "event.budget_total") && typeof f.num === "number")) {
+    decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref}: no organiser yet and "${m.sender}" sets the event basics — treated as the event authority` });
+    m.role = "top_authority";
+  }
   // A caterer's percentage charge (service charge etc.) is a food fee, whatever key the model chose.
   if (m.role === "caterer")
     for (const f of m.facts)
