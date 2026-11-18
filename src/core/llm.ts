@@ -212,6 +212,8 @@ export async function callModel<T>(ledger: CallLedger, req: ModelRequest<T>): Pr
     if (!(e instanceof RetryableError)) throw e;
     const first = ledger.calls[ledger.calls.length - 1];
     if (ledger.remaining() <= 0 || ledger.msLeft() < 4000) throw new CallCapError(`retry skipped (cap/time) after: ${e.message}`);
+    // network-level back-off only (rate limit / server error): wait briefly before the single retry
+    if (/http (429|5\d\d)|network/.test(e.message)) await new Promise((r) => setTimeout(r, Math.min(3000, Math.max(800, ledger.msLeft() - 30_000))));
     return await attempt(ledger, req, first?.seq);
   }
 }
