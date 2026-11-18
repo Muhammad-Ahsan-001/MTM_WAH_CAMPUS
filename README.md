@@ -1,26 +1,49 @@
-# MTM_WAH_CAMPUS
+# mtm_wah_campus
 
-Project workspace. Services are wired up; no application code yet.
+Frontend: React + Vite (JS/TS). Backend: Supabase. Hosting: Vercel.
+Services are wired up; no application code yet.
 
 | Service  | Linked to |
 |----------|-----------|
 | GitHub   | [Muhammad-Ahsan-001/MTM_WAH_CAMPUS](https://github.com/Muhammad-Ahsan-001/MTM_WAH_CAMPUS) (private) |
 | Supabase | [MTM_WAH_CAMPUS](https://supabase.com/dashboard/project/emhbqdihgbkvnaifkuno) · ref `emhbqdihgbkvnaifkuno` · org REGIS · ap-south-1 (Mumbai) |
-| Vercel   | [mtm-wah-campus](https://vercel.com/mahsan7861100-9210s-projects/mtm-wah-campus) · deploys from `main` · functions in `bom1` (Mumbai) · Node 24.x |
+| Vercel   | [mtm-wah-campus](https://vercel.com/mahsan7861100-9210s-projects/mtm-wah-campus) · preset Vite · deploys from `main` · functions `bom1` (Mumbai) · Node 24.x |
 
-## Local setup
+## Environment variables
 
-- `.env.local` (gitignored) holds the Supabase URL and public keys. `.env.example` lists the variable names.
-- `supabase/config.toml` is the Supabase CLI config; this folder is linked to the remote project.
-- `vercel env pull` rewrites `.env.local`. Add the Supabase variables to Vercel first
-  (or install the Supabase integration in Vercel) so a pull keeps them.
+Stored on Vercel (Production, Preview, Development) and pulled locally with `vercel env pull .env.local`:
 
-## Before the first app push
+| Variable | Notes |
+|----------|-------|
+| `VITE_SUPABASE_URL` | Public |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Public, browser-safe (`sb_publishable_...`) |
 
-- The Vercel Framework Preset is unset ("Other"). Set it to the framework you pick
-  (Project Settings > Build and Deployment), or the first build will not use it.
-- Add the Supabase variables to Vercel, with your framework's browser prefix
-  (`NEXT_PUBLIC_` / `VITE_`). Keep the secret key server-only.
-- `npx create-next-app .` refuses this folder (uppercase name, existing files), and
-  `npm create vite . --overwrite` deletes `.env.local`, `.vercel/` and the Supabase link.
-  Scaffold into a lowercase temp folder and move the files in, merging `.gitignore` and `README.md`.
+The Supabase secret key never goes in a `VITE_` variable. Vite inlines those into the browser bundle.
+
+## Scaffolding the app (do this in the repo root)
+
+```bash
+npx create-vite@latest . --template react-ts
+```
+
+When asked about the non-empty folder, pick **Ignore files and continue**. Do **not** pick
+"Remove existing files": it deletes `.env.local`, `.vercel/` and the Supabase link.
+Then restore this repo's `.gitignore` and `README.md` (Vite overwrites both):
+
+```bash
+git checkout -- .gitignore README.md
+```
+
+Use `--template react` instead for plain JavaScript.
+
+## Config already in place
+
+- `vercel.json`: Vite preset + SPA rewrite, so client-side routes don't 404 on refresh.
+- `supabase/config.toml`: local Supabase stack, linked to the remote project. Local auth redirects use Vite's port 5173.
+
+## When you add auth
+
+Set Supabase Dashboard > Authentication > URL Configuration:
+
+- Site URL: `https://mtm-wah-campus.vercel.app`
+- Redirect URLs: `http://localhost:5173/**`, `https://mtm-wah-campus-*-mahsan7861100-9210s-projects.vercel.app/**`
