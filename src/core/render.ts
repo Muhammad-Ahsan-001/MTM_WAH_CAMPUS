@@ -18,6 +18,8 @@ export function planMarkdown(state: SessionState): string {
   out.push("");
   const six = state.checks.filter((c) => c.id !== "constraint");
   out.push(`**Checks:** ${six.map((c) => `${c.pass ? "✅" : "❌"} ${c.label}`).join(" · ")}`);
+  out.push("");
+  out.push(...aiCallsSection(state));
   if (!plan) return out.concat(["", "_No plan yet._"]).join("\n");
   out.push("");
   out.push(...changesSection(state));
@@ -146,6 +148,37 @@ function seatingSection(p: Plan): string[] {
   if (s.notes.length || !s.rooms.length) lines.push("");
   return lines;
 }
+/** One line per AI call (number, exact model name from the API response, purpose, tokens as reported) plus a total. */
+const PURPOSE: Record<string, string> = {
+  reading: "reading messages",
+  venue: "venue (constraint fallback)",
+  schedule: "schedule (constraint fallback)",
+  food: "food (constraint fallback)",
+  judging: "judging (constraint fallback)",
+  budget: "budget (constraint fallback)",
+};
+function aiCallsSection(state: SessionState): string[] {
+  const calls = [...state.calls].sort((a, b) => a.seq - b.seq);
+  const lines = ["## AI calls (trace summary)", ""];
+  if (!calls.length) return [...lines, "_No AI calls yet._", ""];
+  lines.push("| Call | Model (from API response) | What it was for | Tokens (prompt + completion = total) |", "|---|---|---|---|");
+  const t = { p: 0, c: 0, tot: 0, r: 0 };
+  for (const c of calls) {
+    const u = c.usage;
+    if (u) {
+      t.p += u.prompt_tokens ?? 0;
+      t.c += u.completion_tokens ?? 0;
+      t.tot += u.total_tokens ?? 0;
+      t.r += u.reasoning_tokens ?? 0;
+    }
+    const tok = u ? `${u.prompt_tokens.toLocaleString("en-US")} + ${u.completion_tokens.toLocaleString("en-US")} = **${u.total_tokens.toLocaleString("en-US")}**${u.reasoning_tokens ? ` (incl. ${u.reasoning_tokens.toLocaleString("en-US")} reasoning)` : ""}` : "no usage returned";
+    lines.push(`| #${c.seq} | ${c.model} | ${PURPOSE[c.area] ?? c.area} (batch ${c.batch}${c.error ? `, error: ${c.error.replace(/\|/g, "/")}` : ""}) | ${tok} |`);
+  }
+  lines.push(`| **Total** | ${calls.length} call${calls.length === 1 ? "" : "s"} | | ${t.p.toLocaleString("en-US")} + ${t.c.toLocaleString("en-US")} = **${t.tot.toLocaleString("en-US")}**${t.r ? ` (incl. ${t.r.toLocaleString("en-US")} reasoning)` : ""} |`, "");
+  lines.push("Token counts are copied exactly from each API response's `usage` object; the full input and raw output of every call are in the Trace section.", "");
+  return lines;
+}
+
 function budgetSection(p: Plan): string[] {
   if (!p.budget) return ["## Budget", "_No budget._", ""];
   const b = p.budget;
@@ -153,6 +186,7 @@ function budgetSection(p: Plan): string[] {
   if (b.tax) lines.push(`| Tax | ${rs(b.tax)} |`);
   if (b.reserve) lines.push(`| Reserve | ${rs(b.reserve)} |`);
   lines.push(`| **Total** | **${rs(b.total)}** |`, `| Budget | ${rs(b.limit)} |`, `| Remaining | ${rs(b.remaining)} |`, "");
+  if (b.limit !== null) lines.push(`**Fits the budget: ${b.total <= b.limit ? "YES" : "NO"}** — ${rs(b.total)} against ${rs(b.limit)} (${b.total <= b.limit ? `${rs(b.remaining)} left` : `${rs(-(b.remaining ?? 0))} over`}).`, "");
   if (p.requests.length) {
     lines.push("### Requests (not committed unless approved)");
     for (const r of p.requests) lines.push(`- ${r.label}: ${rs(r.amount)} — ${r.approved ? "approved, committed" : `affordable: ${r.affordable === null ? "n/a" : r.affordable ? "yes" : "no"} (remaining ${rs(b.remaining)})`}${from([r.ref])}`);
