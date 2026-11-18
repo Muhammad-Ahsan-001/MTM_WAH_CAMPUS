@@ -1,5 +1,6 @@
 /**
- * callModel — the ONLY function in the codebase that calls OpenAI.
+ * callModel — the ONLY function in the engine that makes model calls (scripts/openai-smoke.ts additionally lists
+ * available model ids via GET /v1/models, which is not a model call).
  * Every call is recorded with: global seq, area tag, the model name taken from the response's `model` field,
  * the full input and raw output, the usage object exactly as returned, and latency.
  */

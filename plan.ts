@@ -42,7 +42,8 @@ async function main() {
   console.log(summary(state, p));
   const mirrored = await mirrorToSupabase(state, res.batch.batch, "cli");
   if (mirrored !== true) console.log(p.yellow(`⚠ Supabase mirror skipped: ${mirrored}`));
-  console.log(p.dim("Outputs: out/plan.md · out/plan.json · out/trace.txt · out/final-plan-and-trace.md"));
+  console.log(p.dim("Outputs: out/report.html · out/plan.md · out/plan.json · out/trace.txt · out/final-plan-and-trace.md"));
+  process.exit(0); // don't wait on idle network handles
 }
 
 function summary(state: import("./src/core/types").SessionState, p: typeof COLOR): string {

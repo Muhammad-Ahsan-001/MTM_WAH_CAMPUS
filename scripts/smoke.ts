@@ -1,5 +1,6 @@
 /**
- * Smoke test over fixtures/scenarios.json: reset → pack → each update, in-process (no files touched).
+ * Smoke test over fixtures/scenarios.json: reset → pack → each update, in-process (state kept in memory; only
+ * writes debug copies to out/smoke/, which is gitignored).
  * Assertions are STRUCTURAL ONLY: plan valid after each batch, expected message status, calls per update ≤ cap,
  * time caps. Never asserts pack values.
  * Usage: npx tsx scripts/smoke.ts [chainIndex|all]   (default: 0 = main chain, plus formats and edge cases)

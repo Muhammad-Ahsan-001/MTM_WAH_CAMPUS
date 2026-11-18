@@ -33,7 +33,7 @@ Per message:
 - summary: max 10 words.
 Facts: one per atomic value; extract only what is stated; never infer, compute or total anything.
 - History is not current: only the value described as old, previous, former, last year's, or in past tense ("was"/"tha") -> key "info"; current values in the same message are still facts.
-- Negations are op remove/forbid (e.g. "not approved", "not in the meal count").
+- Negations (something is not approved, not included, not allowed) are op remove/forbid.
 - num: plain number. Expand multipliers (k=thousand, lakh=100000, crore=10000000), drop digit separators, and convert Roman Urdu number words (sau=100, hazar=1000, dedh=1.5x, dhai=2.5x, sava=1.25x, paune=0.75x). Money is PKR. Clock times: text "HH:MM" (24h), unit clock. Durations in minutes.
 - evidence: max 8 words copied verbatim.
 - basis for prices: fixed | per_head | per_judge | per_team | per_item | per_hour | percent.

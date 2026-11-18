@@ -24,8 +24,8 @@ export const POLICY = {
     fullRunCalls: 5, // 1 reading + 1 retry + up to 3 fallback
     updateCalls: 4, // 1 reading + 1 retry + up to 2 fallback
     fallbackPerAreaPerBatch: 1,
-    fullRunMs: 110_000, // < 2 min hard limit
-    updateMs: 55_000, // < 1 min hard limit
+    fullRunMs: 100_000, // < 2 min hard limit (margin for process start + 3 s mirror)
+    updateMs: 45_000, // < 1 min hard limit (margin for process start + 3 s mirror)
   },
   /** Policy: largest venue option set we enumerate (2^n subsets). */
   maxVenueOptions: 16,

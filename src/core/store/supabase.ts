@@ -100,13 +100,18 @@ export function warmUp(): Promise<void> {
 export async function mirrorToSupabase(state: SessionState, batch: number, source: "cli" | "web", timeoutMs = 3000): Promise<true | string> {
   const db = serviceClient();
   if (!db) return "NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set";
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
       writeBatch(db, state, batch, source),
-      new Promise((_, rej) => setTimeout(() => rej(new Error(`timeout after ${timeoutMs} ms`)), timeoutMs)),
+      new Promise((_, rej) => {
+        timer = setTimeout(() => rej(new Error(`timeout after ${timeoutMs} ms`)), timeoutMs);
+      }),
     ]);
     return true;
   } catch (e) {
     return (e as Error).message;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }

@@ -68,7 +68,7 @@ export function normalizeFact(f: RawFact): RawFact {
   // the model sometimes writes a DSL key inside a custom fact: "venue.require_attr(x): ..."
   if (key === "custom" && text) {
     const k = /^\s*([a-z_]+\.[a-z_]+)\s*[\[(]([^\])]*)[\])]\s*:?\s*(.*)$/i.exec(text);
-    const plain = /^\s*([a-z_.]+)\s*[:=]\s*(.+)$/i.exec(text); // "budget_total: 66500" / "event.teams = 12"
+    const plain = /^\s*([a-z_.]+)\s*[:=]\s*(.+)$/i.exec(text); // e.g. "budget_total: 123" / "event.teams = 7" (invented)
     if (k && KEYSET.has(k[1].toLowerCase())) {
       key = k[1].toLowerCase();
       if (key === "venue.require_attr") text = k[2];

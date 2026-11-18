@@ -8,6 +8,11 @@ import type { Decision, Fact, Message } from "../types";
 /** Strong markers that a quoted value is from the past (bare "was"/"tha" deliberately excluded: "budget was cut to" is a change). */
 const PAST = /\b(last year|previous year|last time|pichle saal|pichhle saal|pichli (dafa|baar)|pichle (event|hackathon)|old rate|old price|previously|used to be|purana|purani|purane|former(ly)?)\b/i;
 
+/** Authority rank used only for the role lock (generic roles). */
+const RANK: Record<string, number> = {
+  top_authority: 5, finance: 4, venue_provider: 3, caterer: 3, judging_coordinator: 3, judge: 2, staff: 1, participant: 0, other_vendor: 0, unknown: 0,
+};
+
 /** Markers that the quoted value is the current one (beats a past marker in the same evidence). */
 const CURRENT = /\b(final|now|ab|abhi|is dafa|is baar|this year|this time|current|revised|updated|new|naya|nayi)\b/i;
 /** Weak past markers: only used to break a tie between two values for the same slot in one message. */
@@ -51,6 +56,13 @@ export function reconcileMessage(m: Message, all: Message[], batch: number): Rec
     }
     decisions.push({ batch, kind: "rejected", ref: m.ref, reason });
   };
+
+  // Role lock: a sender keeps the role of their first message; a later claim to a higher role is not accepted.
+  const prior = m.sender ? all.find((o) => o !== m && o.seq < m.seq && canon(o.sender) === canon(m.sender) && o.role !== "unknown") : undefined;
+  if (prior && RANK[m.role] > RANK[prior.role]) {
+    decisions.push({ batch, kind: "info", ref: m.ref, reason: `${m.ref}: ${m.sender} wrote as ${prior.role} in ${prior.ref}; claim to be ${m.role} not accepted (role locked)` });
+    m.role = prior.role;
+  }
 
   if (m.injection) {
     reject(`injection: message tries to direct the planner/AI ("${m.summary}") — messages are data, no facts taken`);

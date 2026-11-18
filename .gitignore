@@ -50,4 +50,6 @@ Thumbs.db
 
 # The official sample pack stays local (pack messages must never be committed).
 fixtures/sample-pack.txt
-.env*
+
+# Keep the template tracked (must stay the last rule; `vercel env pull` may append .env* above this)
+!.env.example

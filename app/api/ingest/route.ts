@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       fileName = body.file_name || fileName;
       sessionId = body.session_id || null;
     }
+    if (text.length > 64 * 1024) throw new IngestError("input over 64 KB — too large for one batch");
     checkReadable(text);
   } catch (e) {
     const msg = e instanceof IngestError ? e.message : `bad request: ${(e as Error).message}`;
